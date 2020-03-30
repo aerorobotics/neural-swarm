@@ -70,3 +70,46 @@ class RobotAirplane:
       Fl * torch.cos(phi)/(self.mass*v) - self.g * torch.cos(gamma)/v,
       u[1],
       u[2]))
+
+#### Two Crazyflies simulator ####
+from nns import rho_Net
+from nns import phi_Net
+class RobotTwoCrazyFlies2D:
+  def __init__(self, useNN=False):
+    # x = [py1, pz1, vy1, vz1, py2, pz2, vy2, vz2]
+    # u = [fdy1, fdz1, fdy2, fdz2]
+    self.stateDim = 8
+    self.ctrlDim = 4
+    self.x_min = [-1, -1, -5, -5, -1, -1, -5, -5]
+    self.x_max = [1, 1, 5, 5, 1, 1, 5, 5]
+    self.thrust_to_weight = 2.6
+    self.g = 9.81
+    self.mass = 34
+    self.radius = 0.2
+
+    self.rho_net = rho_Net()
+    self.phi_net = phi_Net()
+    self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
+    self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
+    self.nn = useNN
+
+  def f(self, x, u):
+    x_12 = torch.zeros(6)
+    x_12[1:3] = x[4:6] - x[:2]
+    x_12[4:] = x[6:] - x[2:4] 
+    faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
+    faz_2 = self.rho_net(self.phi_net(-x_12))
+    
+    weight = 0.0
+    if self.nn:
+      weight = 1.0
+    
+    return torch.stack([
+      x[2],
+      x[3],
+      u[0],
+      u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
+      x[6],
+      x[7],
+      u[2],
+      u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)])

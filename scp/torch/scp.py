@@ -1,5 +1,6 @@
 import torch
 import cvxpy as cp
+import numpy as np
 
 # Function to compute the jacobian matrices A and B
 # note that this is not as straightforward in pyTorch
@@ -27,7 +28,9 @@ def jacobian(robot, xbar, ubar):
 
   return jacobianA, jacobianB, y.detach()
 
-def scp(robot, initial_x, initial_u, dt, trust_x=2, trust_u=2, num_iterations=10):
+def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
+  X, U = [], []
+  X_integration = []
 
   xprev = initial_x
   uprev = initial_u
@@ -50,13 +53,14 @@ def scp(robot, initial_x, initial_u, dt, trust_x=2, trust_u=2, num_iterations=10
     constraints.append( x[-1] == initial_x[-1] )
 
     # trust region
-    for t in range(0, T):
-      constraints.append(
-        cp.abs(x[t] - xprev[t]) <= trust_x
-      )
-      constraints.append(
-        cp.abs(u[t] - uprev[t]) <= trust_u
-      )
+    if trust_region:
+      for t in range(0, T):
+        constraints.append(
+          cp.abs(x[t] - xprev[t]) <= trust_x
+        )
+        constraints.append(
+          cp.abs(u[t] - uprev[t]) <= trust_u
+        )
 
     # dynamics constraints
     for t in range(0, T-1):
@@ -82,17 +86,40 @@ def scp(robot, initial_x, initial_u, dt, trust_x=2, trust_u=2, num_iterations=10
     for t in range(0, T):
       constraints.extend([
         robot.x_min <= x[t],
-        x[t] <= robot.x_max,
+        x[t] <= robot.x_max
+        ])
+      if hasattr(robot, 'u_min'):
+        constraints.extend([
         robot.u_min <= u[t],
         u[t] <= robot.u_max
+        ])
+      if hasattr(robot, 'thrust_to_weight'):
+        constraints.extend([
+        u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2,
+        u[t, 2]**2 + u[t, 3]**2 <= (robot.g*robot.thrust_to_weight)**2
+        ])
+        # collison check
+        xbar = xprev[t]
+        dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
+        constraints.extend([
+        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
+        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
         ])
 
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True,solver=cp.GUROBI, BarQCPConvTol=1e-8)
+    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-8)
 
     xprev = torch.tensor(x.value, dtype=torch.float32)
     uprev = torch.tensor(u.value, dtype=torch.float32)
+    X.append(xprev)
+    U.append(uprev)
 
-  return xprev, uprev
+    x_int = torch.zeros((T, robot.stateDim))
+    x_int[0] = x0
+    for t in range(0, T-1):
+        x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t]))
+    X_integration.append(x_int.detach())
+
+  return X, U, X_integration
