@@ -109,7 +109,7 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-8)
+    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-7)
 
     xprev = torch.tensor(x.value, dtype=torch.float32)
     uprev = torch.tensor(u.value, dtype=torch.float32)

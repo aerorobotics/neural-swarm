@@ -3,8 +3,10 @@ import torch
 import math
 from scp import scp
 import numpy as np
+import subprocess
 
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 def linspace(start, stop, steps):
   return torch.stack([torch.linspace(start[i], stop[i], steps) for i in range(start.size(0))],dim=1)
@@ -89,6 +91,121 @@ def vis(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False
   # plt.savefig('fig-3.png')
   plt.show()
 
+def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False):
+  scp_epoch = len(X)
+
+  pp = PdfPages("output.pdf")
+
+  # initial y-z trajectory
+  fig, ax = plt.subplots()
+  ax.axis('equal')
+  ax.plot(initial_x[:,0], initial_x[:,1], label="cf1")
+  ax.plot(initial_x[:,4], initial_x[:,5], label="cf2")
+  ax.legend()
+  ax.set_title('y-z trajectory (initial)')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  # initial distance
+  fig, ax = plt.subplots()
+  ax.plot(distance(initial_x), label="distance")
+  ax.axhline(y=2*robot.radius, linestyle='--', label="limit")
+  ax.legend()
+  ax.set_title('distance (initial)')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  # control
+  fig, ax = plt.subplots()
+  ax.plot(initial_u[:,0], label="cf1 uy")
+  ax.plot(initial_u[:,1], label="cf1 uz")
+  ax.plot(initial_u[:,2], label="cf2 uy")
+  ax.plot(initial_u[:,3], label="cf2 uz")
+  ax.legend()
+  ax.set_title('control (initial)')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  # thrust magnitude
+  fig, ax = plt.subplots()
+  ax.plot(thrust(initial_u)[0], label="cf1")
+  ax.plot(thrust(initial_u)[1], label="cf2")
+  ax.axhline(y=robot.g*robot.thrust_to_weight, linestyle='--', label="limit")
+  ax.legend()
+  ax.set_title('thrust magnitude (initial)')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  # velocity
+  fig, ax = plt.subplots()
+  ax.plot(initial_x[:,2], label="cf1 vy")
+  ax.plot(initial_x[:,3], label="cf1 vz")
+  ax.plot(initial_x[:,6], label="cf2 vy")
+  ax.plot(initial_x[:,7], label="cf2 vz")
+  ax.legend()
+  ax.set_title('velocity (initial)')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  for i in range(scp_epoch):
+    # y-z trajectory and distance
+    fig, ax = plt.subplots()
+    ax.axis('equal')
+    ax.plot(X[i][:,0], X[i][:,1], label="cf1")
+    ax.plot(X[i][:,4], X[i][:,5], label="cf2")
+    if plot_integration:
+      ax.plot(X_integration[i][:,0], X_integration[i][:,1], label="cf1 integration")
+      ax.plot(X_integration[i][:,4], X_integration[i][:,5], label="cf2 integration")
+    ax.legend()
+    ax.set_title('y-z trajectory (iter {})'.format(i))
+    pp.savefig(fig)
+    plt.close(fig)
+
+    # distance
+    fig, ax = plt.subplots()
+    ax.plot(distance(X[i]), label="dist initial")
+    ax.axhline(y=2*robot.radius, linestyle='--', label="limit")
+    ax.legend()
+    ax.set_title('distance (iter {})'.format(i))
+    pp.savefig(fig)
+    plt.close(fig)
+
+    # control
+    fig, ax = plt.subplots()
+    ax.plot(U[i][:,0], label="cf1 uy")
+    ax.plot(U[i][:,1], label="cf1 uz")
+    ax.plot(U[i][:,2], label="cf2 uy")
+    ax.plot(U[i][:,3], label="cf2 uz")
+    ax.legend()
+    ax.set_title('control (iter {})'.format(i))
+    pp.savefig(fig)
+    plt.close(fig)
+
+    # thrust magnitude
+    fig, ax = plt.subplots()
+    ax.plot(thrust(U[i])[0], label="cf1")
+    ax.plot(thrust(U[i])[1], label="cf2")
+    ax.axhline(y=robot.g*robot.thrust_to_weight, linestyle='--', label="limit")
+    ax.legend()
+    ax.set_title('thrust magnitude (iter {})'.format(i))
+    pp.savefig(fig)
+    plt.close(fig)
+
+    # velocity
+    fig, ax = plt.subplots()
+    ax.plot(X[i][:,2], label="cf1 vy")
+    ax.plot(X[i][:,3], label="cf1 vz")
+    ax.plot(X[i][:,6], label="cf2 vy")
+    ax.plot(X[i][:,7], label="cf2 vz")
+    ax.legend()
+    ax.set_title('velocity (iter {})'.format(i))
+    pp.savefig(fig)
+    plt.close(fig)
+
+  pp.close()
+  subprocess.call(["xdg-open", "output.pdf"])
+
+
 if __name__ == '__main__':
   # # robot = RobotDubinsCar(1, 1)
 
@@ -157,4 +274,5 @@ if __name__ == '__main__':
   X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
 
   # vis(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False)
-  vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, plot_integration=False)
+  # vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, plot_integration=False)
+  vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, plot_integration=False)
