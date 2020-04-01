@@ -20,7 +20,7 @@ def distance(x):
 def thrust(u):
   return torch.stack([torch.norm(u[i,:2]) for i in range(u.size(0))]), torch.stack([torch.norm(u[i,2:]) for i in range(u.size(0))]) 
 
-def vis(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False):
+def vis(robot, initial_x, initial_u, X, U, X_integration, x_d, x_rollout, u_rollout, plot_integration=False):
   scp_epoch = len(X)
 
   # y-z trajectory and distance
@@ -89,12 +89,35 @@ def vis(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False
     ax[i+1].legend()
   plt.title('velocity')
   # plt.savefig('fig-3.png')
+
+  # roll-out
+  fig, ax = plt.subplots(1, 4)
+  ax[0].plot(x_d[:,0], x_d[:,1], 'g', linestyle='--', label="cf1 des pos")
+  ax[0].plot(x_rollout[:,0], x_rollout[:,1], 'g', label="cf1 tracking")
+  ax[0].plot(x_d[:,4], x_d[:,5], 'b', linestyle='--', label="cf2 des pos")
+  ax[0].plot(x_rollout[:,4], x_rollout[:,5], 'b', label="cf2 tracking")
+  ax[0].legend()
+  ax[1].plot(x_d[:,2], x_d[:,3], 'g', linestyle='--', label="cf1 des vel")
+  ax[1].plot(x_rollout[:,2], x_rollout[:,3], 'g', label="cf1 tracking")
+  ax[1].plot(x_d[:,6], x_d[:,7], 'b', linestyle='--', label="cf2 des vel")
+  ax[1].plot(x_rollout[:,6], x_rollout[:,7], 'b', label="cf2 tracking")
+  ax[1].legend()
+  ax[2].plot(u_rollout[:,0], label="cf1 uy")
+  ax[2].plot(u_rollout[:,1], label="cf1 uz")
+  ax[2].plot(u_rollout[:,2], label="cf2 uy")
+  ax[2].plot(u_rollout[:,3], label="cf2 uz")
+  ax[2].legend()  
+  ax[3].plot(thrust(u_rollout)[0], label="cf1 thrust")
+  ax[3].plot(thrust(u_rollout)[1], label="cf2 thrust")
+  ax[3].axhline(y=robot.g*robot.thrust_to_weight, linestyle='--', label="limit")
+  ax[3].legend()
+  plt.title('roll-out')
   plt.show()
 
-def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False):
+def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, x_d, x_rollout, u_rollout, f_a, plot_integration=False, name='outpuf.pdf'):
   scp_epoch = len(X)
 
-  pp = PdfPages("output.pdf")
+  pp = PdfPages(name)
 
   # initial y-z trajectory
   fig, ax = plt.subplots()
@@ -202,9 +225,68 @@ def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, plot_integration=F
     pp.savefig(fig)
     plt.close(fig)
 
-  pp.close()
-  subprocess.call(["xdg-open", "output.pdf"])
+  # roll-out
+  fig, ax = plt.subplots(2, 1)
+  ax[0].plot(x_d[:,0], x_d[:,1], 'g', linestyle='--', label="cf1 des pos")
+  ax[0].plot(x_rollout[:,0], x_rollout[:,1], 'g', label="cf1 tracking")
+  ax[0].plot(x_d[:,4], x_d[:,5], 'b', linestyle='--', label="cf2 des pos")
+  ax[0].plot(x_rollout[:,4], x_rollout[:,5], 'b', label="cf2 tracking")
+  ax[0].legend()
+  ax[0].set_title('Position tracking')
+  ax[1].plot(f_a[:,0], 'g', label="cf1 Fa")
+  ax[1].plot(f_a[:,1], 'b', label="cf2 Fa")
+  ax[1].legend()
+  ax[1].set_title('Fa') 
+  pp.savefig(fig)
+  plt.close(fig)
 
+  fig, ax = plt.subplots()
+  ax.plot(x_d[:,2], x_d[:,3], 'g', linestyle='--', label="cf1 des vel")
+  ax.plot(x_rollout[:,2], x_rollout[:,3], 'g', label="cf1 tracking")
+  ax.plot(x_d[:,6], x_d[:,7], 'b', linestyle='--', label="cf2 des vel")
+  ax.plot(x_rollout[:,6], x_rollout[:,7], 'b', label="cf2 tracking")
+  ax.legend()
+  ax.set_title('Velocity tracking')
+  pp.savefig(fig)
+  plt.close(fig)
+
+  fig, ax = plt.subplots(1, 2)
+  ax[0].plot(u_rollout[:,0], label="cf1 uy")
+  ax[0].plot(u_rollout[:,1], label="cf1 uz")
+  ax[0].plot(u_rollout[:,2], label="cf2 uy")
+  ax[0].plot(u_rollout[:,3], label="cf2 uz")
+  ax[0].legend()  
+  ax[1].plot(thrust(u_rollout)[0], label="cf1 thrust")
+  ax[1].plot(thrust(u_rollout)[1], label="cf2 thrust")
+  ax[1].axhline(y=robot.g*robot.thrust_to_weight, linestyle='--', label="limit")
+  ax[1].legend()
+  ax[1].set_title('Control and thrust')
+  pp.savefig(fig)
+  plt.close()
+
+  pp.close()
+  subprocess.call(["xdg-open", name])
+
+def tracking(robot, dt, x0, X_d, feedforward=False, ctrl_useNN=False):
+  X = torch.zeros((X_d.size(0), robot.stateDim))
+  U = torch.zeros((X_d.size(0)-1, robot.ctrlDim))
+  Fa = torch.zeros((X_d.size(0)-1, 2))
+  X[0] = x0
+  for i in range(X_d.size(0)-1):
+    if feedforward:
+      v_d_dot = torch.stack([
+        (X_d[i+1, 2]-X_d[i, 2]) / dt,
+        (X_d[i+1, 3]-X_d[i, 3]) / dt,
+        (X_d[i+1, 6]-X_d[i, 6]) / dt,
+        (X_d[i+1, 7]-X_d[i, 7]) / dt])
+    else:
+      v_d_dot = torch.zeros(robot.ctrlDim)
+    u = robot.controller(x=X[i], x_d=X_d[i], v_d_dot=v_d_dot, ctrl_useNN=ctrl_useNN)
+    U[i] = u
+    dx, fa = robot.f(X[i], U[i], eva_Fa=True)
+    X[i+1] = X[i] + dt*dx
+    Fa[i] = fa
+  return X.detach(), U.detach(), Fa.detach()
 
 if __name__ == '__main__':
   # # robot = RobotDubinsCar(1, 1)
@@ -270,9 +352,14 @@ if __name__ == '__main__':
   initial_u[:, [1,3]] = robot.g
 
   scp_epoch = 10
-  # X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=2, num_iterations=scp_epoch)
+  X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
   X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
 
-  # vis(robot, initial_x, initial_u, X, U, X_integration, plot_integration=False)
-  # vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, plot_integration=False)
-  vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, plot_integration=False)
+  # in roll-out, we always use robot_NN!
+  x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
+  x_rollout_NN, u_rollout_NN, fa_NN = tracking(robot_NN, dt, x0, X_d=X_NN[-1], feedforward=True, ctrl_useNN=False)
+
+  # vis(robot, initial_x, initial_u, X, U, X_integration, x_d=X[-1], x_rollout=x_rollout, u_rollout=u_rollout, plot_integration=False)
+  # vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, x_d=X_NN[-1], x_rollout=x_rollout_NN, u_rollout=u_rollout_NN, plot_integration=False)
+  vis_pdf(robot, initial_x, initial_u, X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
+  vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, X_NN[-1], x_rollout_NN, u_rollout_NN, fa_NN, plot_integration=False, name='PlanwithNN.pdf')

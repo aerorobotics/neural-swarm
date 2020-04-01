@@ -92,11 +92,17 @@ class RobotTwoCrazyFlies2D:
     self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
     self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
     self.nn = useNN
+    self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
 
-  def f(self, x, u):
+    # controller
+    self.kp = 1.0
+    self.kd = 2.0
+
+  def f(self, x, u, eva_Fa=False):
     x_12 = torch.zeros(6)
     x_12[1:3] = x[4:6] - x[:2]
-    x_12[4:] = x[6:] - x[2:4] 
+    if self.dim_deepset == 6:
+      x_12[4:] = x[6:] - x[2:4] 
     faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
     faz_2 = self.rho_net(self.phi_net(-x_12))
     
@@ -104,12 +110,41 @@ class RobotTwoCrazyFlies2D:
     if self.nn:
       weight = 1.0
     
+    if not eva_Fa:
+      return torch.stack([
+        x[2],
+        x[3],
+        u[0],
+        u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
+        x[6],
+        x[7],
+        u[2],
+        u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)])
+    else:
+      return torch.stack([
+        x[2],
+        x[3],
+        u[0],
+        u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
+        x[6],
+        x[7],
+        u[2],
+        u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)]), torch.stack([weight*faz_1[0], weight*faz_2[0]])   
+
+  def controller(self, x, x_d, v_d_dot, ctrl_useNN=False):
+    weight = 0.0
+    if ctrl_useNN:
+      weight = 1.0
+
+    x_12 = torch.zeros(6)
+    x_12[1:3] = x[4:6] - x[:2]
+    if self.dim_deepset == 6:
+      x_12[4:] = x[6:] - x[2:4] 
+    faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
+    faz_2 = self.rho_net(self.phi_net(-x_12))
+
     return torch.stack([
-      x[2],
-      x[3],
-      u[0],
-      u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
-      x[6],
-      x[7],
-      u[2],
-      u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)])
+      -self.kp*(x[0]-x_d[0]) - self.kd*(x[2]-x_d[2]) + v_d_dot[0],
+      self.g - self.kp*(x[1]-x_d[1]) - self.kd*(x[3]-x_d[3]) + v_d_dot[1] - weight*faz_1[0]/self.mass*self.g,
+      -self.kp*(x[4]-x_d[4]) - self.kd*(x[6]-x_d[6]) + v_d_dot[2],
+      self.g - self.kp*(x[5]-x_d[5]) - self.kd*(x[7]-x_d[7]) + v_d_dot[3] - weight*faz_2[0]/self.mass*self.g])
