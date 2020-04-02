@@ -41,7 +41,7 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
   for iteration in range(num_iterations):
 
     x = cp.Variable((T, robot.stateDim))
-    u = cp.Variable((T, robot.ctrlDim))
+    u = cp.Variable((T-1, robot.ctrlDim))
 
     objective = cp.Minimize(cp.sum_squares(u))
 
@@ -58,6 +58,7 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
         constraints.append(
           cp.abs(x[t] - xprev[t]) <= trust_x
         )
+      for t in range(0, T-1):
         constraints.append(
           cp.abs(u[t] - uprev[t]) <= trust_u
         )
@@ -88,6 +89,17 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
         robot.x_min <= x[t],
         x[t] <= robot.x_max
         ])
+
+      if hasattr(robot, 'thrust_to_weight'):
+        # collison check
+        xbar = xprev[t]
+        dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
+        constraints.extend([
+        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
+        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
+        ])
+
+    for t in range(0, T-1):
       if hasattr(robot, 'u_min'):
         constraints.extend([
         robot.u_min <= u[t],
@@ -98,18 +110,12 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
         u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2,
         u[t, 2]**2 + u[t, 3]**2 <= (robot.g*robot.thrust_to_weight)**2
         ])
-        # collison check
-        xbar = xprev[t]
-        dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
-        constraints.extend([
-        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
-        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
-        ])
+
 
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-7)
+    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-8)
 
     xprev = torch.tensor(x.value, dtype=torch.float32)
     uprev = torch.tensor(u.value, dtype=torch.float32)

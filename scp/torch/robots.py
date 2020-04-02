@@ -91,60 +91,60 @@ class RobotTwoCrazyFlies2D:
     self.phi_net = phi_Net()
     self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
     self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
-    self.nn = useNN
+    self.useNN = useNN
     self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
 
     # controller
-    self.kp = 4.0 # 1.0
-    self.kd = 4.0 # 2.0
+    self.kp = 20.0 # 1.0
+    self.kd = 20.0 # 2.0
 
-  def f(self, x, u, eva_Fa=False):
-    x_12 = torch.zeros(6)
-    x_12[1:3] = x[4:6] - x[:2]
-    if self.dim_deepset == 6:
-      x_12[4:] = x[6:] - x[2:4] 
-    faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
-    faz_2 = self.rho_net(self.phi_net(-x_12))
-    
-    weight = 0.0
-    if self.nn:
-      weight = 1.0
-    
-    if not eva_Fa:
-      return torch.stack([
-        x[2],
-        x[3],
-        u[0],
-        u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
-        x[6],
-        x[7],
-        u[2],
-        u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)])
+  def compute_Fa(self, x, useNN_override=None):
+    useNN = self.useNN
+    if useNN_override is not None:
+      useNN = useNN_override
+
+    if useNN:
+      x_12 = torch.zeros(6)
+      x_12[1:3] = x[4:6] - x[:2]
+      if self.dim_deepset == 6:
+        x_12[4:] = x[6:] - x[2:4] 
+      faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
+      faz_2 = self.rho_net(self.phi_net(-x_12))
+
+      return torch.stack([faz_1[0], faz_2[0]])
     else:
-      return torch.stack([
-        x[2],
-        x[3],
-        u[0],
-        u[1] + self.g*(weight*faz_1[0]/self.mass-1.0),
-        x[6],
-        x[7],
-        u[2],
-        u[3] + self.g*(weight*faz_2[0]/self.mass-1.0)]), torch.stack([weight*faz_1[0], weight*faz_2[0]])   
+      return torch.zeros(2)
 
-  def controller(self, x, x_d, v_d_dot, ctrl_useNN=False):
-    weight = 0.0
-    if ctrl_useNN:
-      weight = 1.0
+  def f(self, x, u, useNN=None):
 
-    x_12 = torch.zeros(6)
-    x_12[1:3] = x[4:6] - x[:2]
-    if self.dim_deepset == 6:
-      x_12[4:] = x[6:] - x[2:4] 
-    faz_1 = self.rho_net(self.phi_net(x_12)) # unit: gram
-    faz_2 = self.rho_net(self.phi_net(-x_12))
-
+    Fa = self.compute_Fa(x, useNN)
     return torch.stack([
+      x[2],
+      x[3],
+      u[0],
+      u[1] + self.g*(Fa[0]/self.mass-1.0),
+      x[6],
+      x[7],
+      u[2],
+      u[3] + self.g*(Fa[1]/self.mass-1.0)])
+
+  def controller(self, x, x_d, v_d_dot, useNN=None):
+    Fa = self.compute_Fa(x, useNN)
+
+    u_des = torch.stack([
       -self.kp*(x[0]-x_d[0]) - self.kd*(x[2]-x_d[2]) + v_d_dot[0],
-      self.g - self.kp*(x[1]-x_d[1]) - self.kd*(x[3]-x_d[3]) + v_d_dot[1] - weight*faz_1[0]/self.mass*self.g,
+      # -self.kp*(x[1]-x_d[1]) - self.kd*(x[3]-x_d[3]) - self.g*(Fa[0]/self.mass-1.0) + v_d_dot[1],
+      -self.kp*(x[1]-x_d[1]) - self.kd*(x[3]-x_d[3])  + v_d_dot[1],
       -self.kp*(x[4]-x_d[4]) - self.kd*(x[6]-x_d[6]) + v_d_dot[2],
-      self.g - self.kp*(x[5]-x_d[5]) - self.kd*(x[7]-x_d[7]) + v_d_dot[3] - weight*faz_2[0]/self.mass*self.g])
+      # -self.kp*(x[5]-x_d[5]) - self.kd*(x[7]-x_d[7]) - self.g*(Fa[1]/self.mass-1.0) + v_d_dot[3]])
+      -self.kp*(x[5]-x_d[5]) - self.kd*(x[7]-x_d[7]) + v_d_dot[3]])
+
+    # u_des = v_d_dot
+    # return u_des
+
+    # if the controller outputs a desired value above our limit, scale the vector (keeping its direction)
+    u_des_norm = u_des.norm()
+    if u_des_norm > self.g * self.thrust_to_weight:
+      return u_des / u_des_norm * self.g * self.thrust_to_weight
+    else:
+      return u_des

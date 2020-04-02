@@ -267,25 +267,30 @@ def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, x_d, x_rollout, u_
   pp.close()
   subprocess.call(["xdg-open", name])
 
-def tracking(robot, dt, x0, X_d, feedforward=True, ctrl_useNN=False):
+def tracking(robot, dt, x0, X_d, U_d, feedforward=True):
   X = torch.zeros((X_d.size(0), robot.stateDim))
   U = torch.zeros((X_d.size(0)-1, robot.ctrlDim))
   Fa = torch.zeros((X_d.size(0)-1, 2))
   X[0] = x0
   for i in range(X_d.size(0)-1):
     if feedforward:
-      v_d_dot = torch.stack([
-        (X_d[i+1, 2]-X_d[i, 2]) / dt,
-        (X_d[i+1, 3]-X_d[i, 3]) / dt,
-        (X_d[i+1, 6]-X_d[i, 6]) / dt,
-        (X_d[i+1, 7]-X_d[i, 7]) / dt])
+      # v_d_dot = torch.stack([
+      #   (X_d[i+1, 2]-X_d[i, 2]) / dt,
+      #   (X_d[i+1, 3]-X_d[i, 3]) / dt,
+      #   (X_d[i+1, 6]-X_d[i, 6]) / dt,
+      #   (X_d[i+1, 7]-X_d[i, 7]) / dt])
+      v_d_dot = U_d[i]
     else:
       v_d_dot = torch.zeros(robot.ctrlDim)
-    u = robot.controller(x=X[i], x_d=X_d[i], v_d_dot=v_d_dot, ctrl_useNN=ctrl_useNN)
+    u = robot.controller(x=X[i], x_d=X_d[i], v_d_dot=v_d_dot)
     U[i] = u
-    dx, fa = robot.f(X[i], U[i], eva_Fa=True)
+    dx = robot.f(X[i], U[i], useNN=True)
     X[i+1] = X[i] + dt*dx
-    Fa[i] = fa
+    Fa[i] = robot.compute_Fa(X[i], True)
+
+  energy = torch.sum(U.norm(dim=1) * dt).item()
+  tracking_error = torch.sum(torch.norm(X - X_d, dim=1) * dt).item()
+  print("energy: ", energy, " tracking error: ", tracking_error)
   return X.detach(), U.detach(), Fa.detach()
 
 if __name__ == '__main__':
@@ -335,48 +340,60 @@ if __name__ == '__main__':
 
   x0 = torch.tensor([-0.5,0,0,0,0.5,0,0,0], dtype=torch.float32)
   xf = torch.tensor([0.5,0,0,0,-0.5,0,0,0], dtype=torch.float32)
-  dt = 0.1
+  dt = 0.05
   T = 2
   num_steps = int(T / dt)
 
   initial_x = linspace(x0, xf, num_steps)
+  initial_u = torch.zeros((num_steps, robot.ctrlDim))
   # better initial_x
   theta = np.linspace(np.pi, 2*np.pi, num_steps)
   for i in range(num_steps):
-    initial_x[i, 0] = 0.5*np.cos(theta[i])
-    initial_x[i, 1] = -0.5*np.sin(theta[i])
-    initial_x[i, 4] = -0.5*np.cos(theta[i])
-    initial_x[i, 5] = 0.5*np.sin(theta[i])    
+    initial_x[i, 0] = 0.5*np.cos(theta[i])   #cf1 x
+    initial_x[i, 1] = -0.5*np.sin(theta[i])  #cf1 y
+    initial_x[i, 2] = -0.5*np.sin(theta[i])  #cf1 vx
+    initial_x[i, 3] = -0.5*np.cos(theta[i])  #cf1 vy
+    initial_u[i, 0] = -0.5*np.cos(theta[i])  #cf1 uy
+    initial_u[i, 1] = 0.5*np.sin(theta[i]) + robot.g  #cf1 uz
 
-  initial_u = torch.zeros((num_steps, robot.ctrlDim))
-  initial_u[:, [1,3]] = robot.g
+    initial_x[i, 4] = -0.5*np.cos(theta[i])   #cf2 x
+    initial_x[i, 5] = 0.5*np.sin(theta[i])  #cf2 y
+    initial_x[i, 6] = 0.5*np.sin(theta[i])  #cf2 vx
+    initial_x[i, 7] = 0.5*np.cos(theta[i])  #cf2 vy
+    initial_u[i, 2] = 0.5*np.cos(theta[i])  #cf2 uy
+    initial_u[i, 3] = -0.5*np.sin(theta[i]) + robot.g  #cf2 uz
 
-  '''
+  x0 = initial_x[0]
+  xf = initial_x[-1]
+
   scp_epoch = 10
-  X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
-  X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+  X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+  X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
 
-  # in roll-out, we always use robot_NN!
-  x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
-  x_rollout_NN, u_rollout_NN, fa_NN = tracking(robot_NN, dt, x0, X_d=X_NN[-1], feedforward=True, ctrl_useNN=False)
+  # in roll-out, the dynamics will automatically always compute Fa
+  print("Plan without NN")
+  x_rollout, u_rollout, fa = tracking(robot, dt, x0, X_d=X[-1], U_d=U[-1], feedforward=True)
+  print("Plan with NN")
+  x_rollout_NN, u_rollout_NN, fa_NN = tracking(robot_NN, dt, x0, X_d=X_NN[-1], U_d=U_NN[-1], feedforward=True)
 
   # vis(robot, initial_x, initial_u, X, U, X_integration, x_d=X[-1], x_rollout=x_rollout, u_rollout=u_rollout, plot_integration=False)
   # vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, x_d=X_NN[-1], x_rollout=x_rollout_NN, u_rollout=u_rollout_NN, plot_integration=False)
+  
   vis_pdf(robot, initial_x, initial_u, X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
   vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, X_NN[-1], x_rollout_NN, u_rollout_NN, fa_NN, plot_integration=False, name='PlanwithNN.pdf')
-  '''
+  
 
-  ################# Try sequential SCP #################
-  # warm-up
-  scp_epoch = 2
-  X_warm, U_warm, X_integration_warm = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+  # ################# Try sequential SCP #################
+  # # warm-up
+  # scp_epoch = 2
+  # X_warm, U_warm, X_integration_warm = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
 
-  scp_epoch = 4
-  # Note: both scp_sequential and scp_sequential_2 will converge to some "bad" solutions...
-  # X, U, X_integration = scp_sequential(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
-  X, U, X_integration = scp_sequential_2(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+  # scp_epoch = 4
+  # # Note: both scp_sequential and scp_sequential_2 will converge to some "bad" solutions...
+  # # X, U, X_integration = scp_sequential(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+  # X, U, X_integration = scp_sequential_2(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
 
-  # in roll-out, we always use robot_NN!
-  x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
+  # # in roll-out, we always use robot_NN!
+  # x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
 
-  vis_pdf(robot, X_warm[-1], U_warm[-1], X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
+  # vis_pdf(robot, X_warm[-1], U_warm[-1], X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
