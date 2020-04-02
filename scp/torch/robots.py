@@ -95,8 +95,8 @@ class RobotTwoCrazyFlies2D:
     self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
 
     # controller
-    self.kp = 1.0
-    self.kd = 2.0
+    self.kp = 4.0 # 1.0
+    self.kd = 4.0 # 2.0
 
   def f(self, x, u, eva_Fa=False):
     x_12 = torch.zeros(6)

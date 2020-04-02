@@ -1,7 +1,7 @@
 from robots import RobotDubinsCar, RobotDoubleIntegrator, RobotAirplane, RobotTwoCrazyFlies2D
 import torch
 import math
-from scp import scp
+from scp import scp, scp_sequential, scp_sequential_2
 import numpy as np
 import subprocess
 
@@ -267,7 +267,7 @@ def vis_pdf(robot, initial_x, initial_u, X, U, X_integration, x_d, x_rollout, u_
   pp.close()
   subprocess.call(["xdg-open", name])
 
-def tracking(robot, dt, x0, X_d, feedforward=False, ctrl_useNN=False):
+def tracking(robot, dt, x0, X_d, feedforward=True, ctrl_useNN=False):
   X = torch.zeros((X_d.size(0), robot.stateDim))
   U = torch.zeros((X_d.size(0)-1, robot.ctrlDim))
   Fa = torch.zeros((X_d.size(0)-1, 2))
@@ -351,6 +351,7 @@ if __name__ == '__main__':
   initial_u = torch.zeros((num_steps, robot.ctrlDim))
   initial_u[:, [1,3]] = robot.g
 
+  '''
   scp_epoch = 10
   X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
   X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
@@ -363,3 +364,19 @@ if __name__ == '__main__':
   # vis(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, x_d=X_NN[-1], x_rollout=x_rollout_NN, u_rollout=u_rollout_NN, plot_integration=False)
   vis_pdf(robot, initial_x, initial_u, X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
   vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, X_NN[-1], x_rollout_NN, u_rollout_NN, fa_NN, plot_integration=False, name='PlanwithNN.pdf')
+  '''
+
+  ################# Try sequential SCP #################
+  # warm-up
+  scp_epoch = 2
+  X_warm, U_warm, X_integration_warm = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+
+  scp_epoch = 4
+  # Note: both scp_sequential and scp_sequential_2 will converge to some "bad" solutions...
+  # X, U, X_integration = scp_sequential(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+  X, U, X_integration = scp_sequential_2(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
+
+  # in roll-out, we always use robot_NN!
+  x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
+
+  vis_pdf(robot, X_warm[-1], U_warm[-1], X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
