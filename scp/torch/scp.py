@@ -154,15 +154,24 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
     # goal state constraint
     constraints.append( x[-1] == initial_x[-1] )
 
-    # sequential
+    # sequential constraint: enforce x/u to be constant every other iteration
     for t in range(0, T):
       if iteration % 2 == 0:
         constraints.extend([
-          x[t, 4:] == xprev[t, 4:], u[t, 2:] == uprev[t, 2:]
+          x[t, 4:] == xprev[t, 4:]
         ])
       else:
         constraints.extend([
-          x[t, :4] == xprev[t, :4], u[t, :2] == uprev[t, :2]
+          x[t, :4] == xprev[t, :4]
+        ])
+    for t in range(0, T-1):
+      if iteration % 2 == 0:
+        constraints.extend([
+          u[t, 2:] == uprev[t, 2:]
+        ])
+      else:
+        constraints.extend([
+          u[t, :2] == uprev[t, :2]
         ])
 
     # trust region
@@ -171,6 +180,7 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
         constraints.append(
           cp.abs(x[t] - xprev[t]) <= trust_x
         )
+      for t in range(0, T-1):
         constraints.append(
           cp.abs(u[t] - uprev[t]) <= trust_u
         )
@@ -201,6 +211,17 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
         robot.x_min <= x[t],
         x[t] <= robot.x_max
         ])
+
+      if hasattr(robot, 'thrust_to_weight'):
+        # collison check
+        xbar = xprev[t]
+        dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
+        constraints.extend([
+        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
+        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
+        ])
+
+    for t in range(0, T-1):
       if hasattr(robot, 'u_min'):
         constraints.extend([
         robot.u_min <= u[t],
@@ -211,18 +232,12 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
         u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2,
         u[t, 2]**2 + u[t, 3]**2 <= (robot.g*robot.thrust_to_weight)**2
         ])
-        # collison check
-        xbar = xprev[t]
-        dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
-        constraints.extend([
-        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
-        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
-        ])
+
 
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-7)
+    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-8)
 
     xprev = torch.tensor(x.value, dtype=torch.float32)
     uprev = torch.tensor(u.value, dtype=torch.float32)
@@ -257,7 +272,7 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
       cf = '2'
 
     x = cp.Variable((T, 4))
-    u = cp.Variable((T, 2))
+    u = cp.Variable((T-1, 2))
 
     objective = cp.Minimize(cp.sum_squares(u))
 
@@ -279,13 +294,16 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
           constraints.append(
             cp.abs(x[t] - xprev[t, :4]) <= trust_x
           )
-          constraints.append(
-            cp.abs(u[t] - uprev[t, :2]) <= trust_u
-          )
         else:
           constraints.append(
             cp.abs(x[t] - xprev[t, 4:]) <= trust_x
           )
+      for t in range(0, T-1):
+        if cf == '1':
+          constraints.append(
+            cp.abs(u[t] - uprev[t, :2]) <= trust_u
+          )
+        else:
           constraints.append(
             cp.abs(u[t] - uprev[t, 2:]) <= trust_u
           )
@@ -322,7 +340,6 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
           robot.x_min[:4] <= x[t],
           x[t] <= robot.x_max[:4]
           ])
-        constraints.extend([ u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2 ])
         # collison check
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
@@ -332,19 +349,24 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
           robot.x_min[4:] <= x[t],
           x[t] <= robot.x_max[4:]
           ])
-        constraints.extend([ u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2 ])
         # collison check
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
         constraints.extend([ (x[t, 0]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 1]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist ])
+    
+    for t in range(0, T-1):
+      if cf == '1':
+        constraints.extend([ u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2 ])
+      else:
+        constraints.extend([ u[t, 0]**2 + u[t, 1]**2 <= (robot.g*robot.thrust_to_weight)**2 ])
 
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-7)
+    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-8)
 
     x_temp = torch.zeros((T, robot.stateDim))
-    u_temp = torch.zeros((T, robot.ctrlDim))
+    u_temp = torch.zeros((T-1, robot.ctrlDim))
     if cf == '1':
       x_temp[:, :4] = torch.tensor(x.value, dtype=torch.float32)
       u_temp[:, :2] = torch.tensor(u.value, dtype=torch.float32)

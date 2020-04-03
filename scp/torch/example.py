@@ -345,7 +345,7 @@ if __name__ == '__main__':
   num_steps = int(T / dt)
 
   initial_x = linspace(x0, xf, num_steps)
-  initial_u = torch.zeros((num_steps, robot.ctrlDim))
+  initial_u = torch.zeros((num_steps-1, robot.ctrlDim))
   # better initial_x
   theta = np.linspace(np.pi, 2*np.pi, num_steps)
   for i in range(num_steps):
@@ -353,22 +353,33 @@ if __name__ == '__main__':
     initial_x[i, 1] = -0.5*np.sin(theta[i])  #cf1 y
     initial_x[i, 2] = -0.5*np.sin(theta[i])  #cf1 vx
     initial_x[i, 3] = -0.5*np.cos(theta[i])  #cf1 vy
-    initial_u[i, 0] = -0.5*np.cos(theta[i])  #cf1 uy
-    initial_u[i, 1] = 0.5*np.sin(theta[i]) + robot.g  #cf1 uz
+    if i < num_steps - 1:
+      initial_u[i, 0] = -0.5*np.cos(theta[i])  #cf1 uy
+      initial_u[i, 1] = 0.5*np.sin(theta[i]) + robot.g  #cf1 uz
 
     initial_x[i, 4] = -0.5*np.cos(theta[i])   #cf2 x
     initial_x[i, 5] = 0.5*np.sin(theta[i])  #cf2 y
     initial_x[i, 6] = 0.5*np.sin(theta[i])  #cf2 vx
     initial_x[i, 7] = 0.5*np.cos(theta[i])  #cf2 vy
-    initial_u[i, 2] = 0.5*np.cos(theta[i])  #cf2 uy
-    initial_u[i, 3] = -0.5*np.sin(theta[i]) + robot.g  #cf2 uz
+    if i < num_steps - 1:
+      initial_u[i, 2] = 0.5*np.cos(theta[i])  #cf2 uy
+      initial_u[i, 3] = -0.5*np.sin(theta[i]) + robot.g  #cf2 uz
 
   x0 = initial_x[0]
   xf = initial_x[-1]
+  sequential_SCP = 2 # 1 does not work for me; 2 works; set to 0 to plan in joint space
 
+  ################# Joint-space SCP #################
   scp_epoch = 10
-  X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
-  X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+  if sequential_SCP == 1:
+    X, U, X_integration = scp_sequential(robot, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+    X_NN, U_NN, X_integration_NN = scp_sequential(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+  elif sequential_SCP == 2:
+    X, U, X_integration = scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+    X_NN, U_NN, X_integration_NN = scp_sequential_2(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+  else:
+    X, U, X_integration = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+    X_NN, U_NN, X_integration_NN = scp(robot_NN, initial_x, initial_u, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
 
   # in roll-out, the dynamics will automatically always compute Fa
   print("Plan without NN")
@@ -381,19 +392,3 @@ if __name__ == '__main__':
   
   vis_pdf(robot, initial_x, initial_u, X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
   vis_pdf(robot_NN, initial_x, initial_u, X_NN, U_NN, X_integration_NN, X_NN[-1], x_rollout_NN, u_rollout_NN, fa_NN, plot_integration=False, name='PlanwithNN.pdf')
-  
-
-  # ################# Try sequential SCP #################
-  # # warm-up
-  # scp_epoch = 2
-  # X_warm, U_warm, X_integration_warm = scp(robot, initial_x, initial_u, dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
-
-  # scp_epoch = 4
-  # # Note: both scp_sequential and scp_sequential_2 will converge to some "bad" solutions...
-  # # X, U, X_integration = scp_sequential(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
-  # X, U, X_integration = scp_sequential_2(robot, X_warm[-1], U_warm[-1], dt, trust_region=True, trust_x=2, trust_u=3, num_iterations=scp_epoch)
-
-  # # in roll-out, we always use robot_NN!
-  # x_rollout, u_rollout, fa = tracking(robot_NN, dt, x0, X_d=X[-1], feedforward=True, ctrl_useNN=False)
-
-  # vis_pdf(robot, X_warm[-1], U_warm[-1], X, U, X_integration, X[-1], x_rollout, u_rollout, fa, plot_integration=False, name='PlanwoNN.pdf')
