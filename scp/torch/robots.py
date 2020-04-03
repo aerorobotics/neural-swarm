@@ -82,6 +82,8 @@ class RobotTwoCrazyFlies2D:
     self.ctrlDim = 4
     self.x_min = [-1, -1, -5, -5, -1, -1, -5, -5]
     self.x_max = [1, 1, 5, 5, 1, 1, 5, 5]
+    self.u_min = [-2 * 9.81, -2 * 9.81, -2 * 9.81, -2 * 9.81]
+    self.u_max = [2 * 9.81, 2 * 9.81, 2 * 9.81, 2 * 9.81]
     self.thrust_to_weight = 2.6
     self.g = 9.81
     self.mass = 34

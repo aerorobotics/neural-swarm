@@ -143,7 +143,7 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
   for iteration in range(num_iterations):
 
     x = cp.Variable((T, robot.stateDim))
-    u = cp.Variable((T, robot.ctrlDim))
+    u = cp.Variable((T-1, robot.ctrlDim))
 
     objective = cp.Minimize(cp.sum_squares(u))
 
