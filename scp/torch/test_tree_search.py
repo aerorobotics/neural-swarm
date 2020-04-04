@@ -3,6 +3,8 @@ import torch
 import heapq
 import matplotlib.pyplot as plt
 from robots import RobotTwoCrazyFlies2D
+from scp import scp, scp_min_xf
+from example import tracking, vis_pdf
 
 
 def compute_reward(x):
@@ -14,9 +16,11 @@ if __name__ == '__main__':
 
   cost_limit = 1e6
 
-  robot = RobotTwoCrazyFlies2D(useNN=False)
+  useNN = True
+  robot = RobotTwoCrazyFlies2D(useNN)
 
   x0 = np.array([-0.5,0,0,0,0.5,0,0,0])
+  xf = torch.tensor([0.5,0,0,0,-0.5,0,0,0], dtype=torch.float32)
   dt = 0.05
   prop_iter = 3
   iters = 100000
@@ -123,6 +127,65 @@ if __name__ == '__main__':
             idx = parents[idx]
 
           plt.show()
+
+          # generate initial solution for SCP
+          initial_x = []
+          initial_u = []
+          
+          idx = i
+          while idx > 0:
+            for k in reversed(range(1, prop_iter)):
+              initial_x.append(states_temp[idx,k])
+              initial_u.append(actions[idx])
+            idx = parents[idx]
+          initial_x.append(x0)
+          initial_x.reverse()
+          initial_u.reverse()
+          initial_x = torch.tensor(initial_x, dtype=torch.float32)
+          initial_u = torch.tensor(initial_u, dtype=torch.float32)
+
+          # # DEBUG: forward propagation
+          # x_int = torch.zeros(initial_x.size(), dtype=torch.float32)
+          # x_int[0] = initial_x[0]
+          # for t in range(0, initial_x.size()[0]-1):
+          #   x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], initial_u[t]))
+
+          # fig, ax = plt.subplots()
+          # ax.axis('equal')
+          # ax.plot(initial_x[:,0], initial_x[:,1], label="cf1")
+          # ax.plot(initial_x[:,4], initial_x[:,5], label="cf2")
+          # ax.plot(x_int[:,0], x_int[:,1], label="cf1 integration")
+          # ax.plot(x_int[:,4], x_int[:,5], label="cf2 integration")
+          # ax.legend()
+          # ax.set_title('y-z trajectory')
+          # plt.show()
+
+          scp_epoch = 10
+          X1, U1, X1_integration = scp_min_xf(robot, initial_x, initial_u, xf, dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1000)
+          X2, U2, X2_integration = scp(robot, X1[-1], U1[-1], dt, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=scp_epoch)
+
+          fig, ax = plt.subplots()
+          ax.axis('equal')
+          ax.plot(initial_x[:,0], initial_x[:,1], label="cf1 (tree search)")
+          ax.plot(initial_x[:,4], initial_x[:,5], label="cf2 (tree search)")
+
+          ax.plot(X1[-1][:,0], X1[-1][:,1], label="cf1 (SCP min xf)")
+          ax.plot(X1[-1][:,4], X1[-1][:,5], label="cf2 (SCP min xf)")
+
+          ax.plot(X2[-1][:,0], X2[-1][:,1], label="cf1 (SCP min u)")
+          ax.plot(X2[-1][:,4], X2[-1][:,5], label="cf2 (SCP min u)")
+          ax.legend()
+          plt.show()
+
+          # in roll-out, the dynamics will automatically always compute Fa
+          x_rollout, u_rollout, fa = tracking(robot, dt, torch.from_numpy(x0), X_d=X2[-1], U_d=U2[-1], feedforward=True)
+
+          if useNN:
+            filename = 'Plan_tree_search_with_NN.pdf'
+          else:
+            filename = 'Plan_tree_search_without_NN.pdf'
+          vis_pdf(robot, initial_x, initial_u, X2, U2, X2_integration, X2[-1], x_rollout, u_rollout, fa, plot_integration=False, name=filename)
+
           break
 
       i+=1
