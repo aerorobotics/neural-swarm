@@ -95,8 +95,7 @@ def scp(robot, initial_x, initial_u, dt, trust_region=False, trust_x=2, trust_u=
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
         constraints.extend([
-        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
-        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
+        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= 2*robot.radius*dist
         ])
 
     for t in range(0, T-1):
@@ -217,8 +216,7 @@ def scp_sequential(robot, initial_x, initial_u, dt, trust_region=False, trust_x=
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
         constraints.extend([
-        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist,
-        (x[t, 4]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 5]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist
+        (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= 2*robot.radius*dist
         ])
 
     for t in range(0, T-1):
@@ -343,7 +341,7 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
         # collison check
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
-        constraints.extend([ (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= robot.radius*dist ])
+        constraints.extend([ (x[t, 0]-xbar[4])*(xbar[0]-xbar[4]) + (x[t, 1]-xbar[5])*(xbar[1]-xbar[5]) >= 2*robot.radius*dist ])
       else:
         constraints.extend([
           robot.x_min[4:] <= x[t],
@@ -352,7 +350,7 @@ def scp_sequential_2(robot, initial_x, initial_u, dt, trust_region=False, trust_
         # collison check
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xbar[4], xbar[1]-xbar[5]])
-        constraints.extend([ (x[t, 0]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 1]-xbar[1])*(xbar[5]-xbar[1]) >= robot.radius*dist ])
+        constraints.extend([ (x[t, 0]-xbar[0])*(xbar[4]-xbar[0]) + (x[t, 1]-xbar[1])*(xbar[5]-xbar[1]) >= 2*robot.radius*dist ])
     
     for t in range(0, T-1):
       if cf == '1':
