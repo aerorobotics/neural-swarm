@@ -150,3 +150,70 @@ class RobotTwoCrazyFlies2D:
       return u_des / u_des_norm * self.g * self.thrust_to_weight
     else:
       return u_des
+
+
+class RobotCrazyFlie2D:
+  def __init__(self, useNN=False):
+    # x = [py, pz, vy, vz]
+    # u = [fdy, fdz]
+    self.stateDim = 4
+    self.ctrlDim = 2
+    self.x_min = [-1, -1, -5, -5]
+    self.x_max = [1, 1, 5, 5]
+    self.thrust_to_weight = 2.6
+    self.g = 9.81
+    self.mass = 34
+    self.radius = 0.2
+
+    self.rho_net = rho_Net()
+    self.phi_net = phi_Net()
+    self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
+    self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
+    self.useNN = useNN
+    self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
+
+    # controller
+    self.kp = 4.0 # 1.0
+    self.kd = 4.0 # 2.0
+
+  def compute_Fa(self, x, x_neighbors, useNN_override=None):
+    useNN = self.useNN
+    if useNN_override is not None:
+      useNN = useNN_override
+
+    if useNN:
+      rho_input = torch.zeros(40)
+      for x_neighbor in x_neighbors:
+        x_12 = torch.zeros(6)
+        x_12[1:3] = x_neighbor[0:2] - x[0:2]
+        if self.dim_deepset == 6:
+          x_12[4:] = x_neighbor[2:4] - x[2:4]
+        rho_input += self.phi_net(x_12)
+      faz = self.rho_net(rho_input)
+      return faz[0]
+    else:
+      return 0.0
+
+  def f(self, x, u, x_neighbors, useNN=None):
+
+    Fa = self.compute_Fa(x, x_neighbors, useNN)
+    return torch.stack([
+      x[2],
+      x[3],
+      u[0],
+      u[1] + self.g*(Fa/self.mass-1.0)])
+
+  def controller(self, x, x_d, v_d_dot):
+    u_des = torch.stack([
+      -self.kp*(x[0]-x_d[0]) - self.kd*(x[2]-x_d[2]) + v_d_dot[0],
+      -self.kp*(x[1]-x_d[1]) - self.kd*(x[3]-x_d[3]) + v_d_dot[1]])
+
+    # u_des = v_d_dot
+    # return u_des
+
+    # if the controller outputs a desired value above our limit, scale the vector (keeping its direction)
+    u_des_norm = u_des.norm()
+    if u_des_norm > self.g * self.thrust_to_weight:
+      return u_des / u_des_norm * self.g * self.thrust_to_weight
+    else:
+      return u_des
