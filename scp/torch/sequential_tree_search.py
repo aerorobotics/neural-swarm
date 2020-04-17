@@ -56,8 +56,8 @@ def tree_search(robot, x0, xf, dt, other_x, prop_iter=2, iters=100000, top_k=100
     best_i = 0
 
     while i < iters:
-      if i % 1000 == 0:
-        print(i)
+      # if i % 1000 == 0:
+      #   print(i)
 
       # sample a node to expand
       if np.random.random() < 0.3:
@@ -73,21 +73,31 @@ def tree_search(robot, x0, xf, dt, other_x, prop_iter=2, iters=100000, top_k=100
       if cost[i] > cost_limit:
         continue
 
-      timesteps[i] = timesteps[idx] + 1
+      timesteps[i] = timesteps[idx] + prop_iter
 
-      # forward propagate
+      # compute neighbors
+      nx_idx = timesteps[idx]
+      nx_idx_next = timesteps[i]
       x_neighbors = []
+      x_neighbors_next = []
       for nx in other_x:
-        if nx.shape[0] > timesteps[i]:
-          x_neighbors.append(nx[timesteps[i],:].detach())
+        if nx.shape[0] > nx_idx:
+          x_neighbors.append(nx[nx_idx,:].detach())
         else:
           x_neighbors.append(nx[-1,:].detach())
+        if nx.shape[0] > nx_idx_next:
+          x_neighbors_next.append(nx[nx_idx_next,:].detach())
+        else:
+          x_neighbors_next.append(nx[-1,:].detach())
 
+      # forward propagate
+      # NOTE: here, we do not do collision checking (or updating of x_neighbors) between prop_iter for efficiency
       states_temp[i,0] = states[idx]
       for k in range(1,prop_iter+1):
+
         states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), x_neighbors).detach().numpy() * dt
 
-      if not state_valid(robot, states_temp[i,-1], x_neighbors):
+      if not state_valid(robot, states_temp[i,-1], x_neighbors_next):
         continue
 
       # update data structures
@@ -102,7 +112,7 @@ def tree_search(robot, x0, xf, dt, other_x, prop_iter=2, iters=100000, top_k=100
         heapq.heappushpop(top_k_heap, (reward[i], i))
 
       if reward[i] > best_reward:
-        print("best reward: ", reward[i])
+        # print("best reward: ", reward[i])
         best_reward = reward[i]
         best_i = i
         if best_reward > -0.1:

@@ -38,8 +38,8 @@ def get_x_neighbors(other_x, t):
   return x_neighbors
 
 def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
-  X, U = [], []
-  X_integration = []
+  X, U = [initial_x], [initial_u]
+  X_integration = [None]
 
   xprev = initial_x
   uprev = initial_u
@@ -116,7 +116,14 @@ def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2,
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-9)
+    try:
+      result = prob.solve(verbose=False, solver=cp.GUROBI, BarQCPConvTol=1e-9)
+    except cp.error.SolverError:
+      print("Warning: Solver failed!")
+      return X, U, X_integration, float('inf')
+    except KeyError:
+      print("Warning BarQCPConvTol too big?")
+      return X, U, X_integration, float('inf')
 
     # dbgx = torch.tensor(x.value, dtype=torch.float32)
     # dbgu = torch.tensor(u.value, dtype=torch.float32)
@@ -140,12 +147,12 @@ def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2,
       x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t], x_neighbors))
     X_integration.append(x_int.detach())
 
-  return X, U, X_integration
+  return X, U, X_integration, prob.value
 
 
 def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
-  X, U = [], []
-  X_integration = []
+  X, U = [initial_x], [initial_u]
+  X_integration = [None]
 
   xprev = initial_x
   uprev = initial_u
@@ -181,7 +188,9 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
       xbar = xprev[t]
       ubar = uprev[t]
 
+      # print(other_x)
       x_neighbors = get_x_neighbors(other_x, t)
+      # print(x_neighbors)
       A, B, y = jacobian(robot, xbar, ubar, x_neighbors)
       # simple version:
       constraints.append(
@@ -222,7 +231,14 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
     prob = cp.Problem(objective, constraints)
 
     # The optimal objective value is returned by `prob.solve()`.
-    result = prob.solve(verbose=True, solver=cp.GUROBI, BarQCPConvTol=1e-9)
+    try:
+      result = prob.solve(verbose=False, solver=cp.GUROBI, BarQCPConvTol=1e-9)
+    except cp.error.SolverError:
+      print("Warning: Solver failed!")
+      return X, U, X_integration, float('inf')
+    except KeyError:
+      print("Warning BarQCPConvTol too big?")
+      return X, U, X_integration, float('inf')
 
     # dbgx = torch.tensor(x.value, dtype=torch.float32)
     # dbgu = torch.tensor(u.value, dtype=torch.float32)
@@ -249,4 +265,4 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
     if prob.value < 1e-8:
       break
 
-  return X, U, X_integration
+  return X, U, X_integration, prob.value
