@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# H is the dimension of the hidden state
 class phi_Net(nn.Module):
-    def __init__(self):
+    def __init__(self, H=40):
         super(phi_Net, self).__init__()
         self.fc1 = nn.Linear(6, 25)
         self.fc2 = nn.Linear(25, 40)
         self.fc3 = nn.Linear(40, 40)
-        self.fc4 = nn.Linear(40, 40)
+        self.fc4 = nn.Linear(40, H)
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -18,9 +19,9 @@ class phi_Net(nn.Module):
         return x
 
 class rho_Net(nn.Module):
-    def __init__(self):
+    def __init__(self, H=40):
         super(rho_Net, self).__init__()
-        self.fc1 = nn.Linear(40, 40)
+        self.fc1 = nn.Linear(H, 40)
         self.fc2 = nn.Linear(40, 40)
         self.fc3 = nn.Linear(40, 40)
         self.fc4 = nn.Linear(40, 1)

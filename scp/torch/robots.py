@@ -89,16 +89,16 @@ class RobotTwoCrazyFlies2D:
     self.mass = 34
     self.radius = 0.2
 
-    self.rho_net = rho_Net()
-    self.phi_net = phi_Net()
-    self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
-    self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
+    self.rho_net = rho_Net(H=40)
+    self.phi_net = phi_Net(H=40)
+    self.rho_net.load_state_dict(torch.load('./models/rho_0912_3.pth'))
+    self.phi_net.load_state_dict(torch.load('./models/phi_0912_3.pth'))
     self.useNN = useNN
     self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
 
     # controller
-    self.kp = 20.0 # 1.0
-    self.kd = 20.0 # 2.0
+    self.kp = 4.0 # 20.0 # 1.0
+    self.kd = 4.0 # 20.0 # 2.0
 
   def compute_Fa(self, x, useNN_override=None):
     useNN = self.useNN
@@ -165,10 +165,15 @@ class RobotCrazyFlie2D:
     self.mass = 34
     self.radius = 0.2
 
-    self.rho_net = rho_Net()
-    self.phi_net = phi_Net()
-    self.rho_net.load_state_dict(torch.load('./rho_0912_3.pth'))
-    self.phi_net.load_state_dict(torch.load('./phi_0912_3.pth'))
+    self.H = 20 # dimension of the hidden state (output of \phi nets)
+    self.rho_L_net = rho_Net(H=self.H)
+    self.phi_L_net = phi_Net(H=self.H)
+    self.rho_L_net.load_state_dict(torch.load('./models/rho_L.pth'))
+    self.phi_L_net.load_state_dict(torch.load('./models/phi_L.pth'))
+    self.rho_S_net = rho_Net(H=self.H)
+    self.phi_S_net = phi_Net(H=self.H)
+    self.rho_S_net.load_state_dict(torch.load('./models/rho_S.pth'))
+    self.phi_S_net.load_state_dict(torch.load('./models/phi_S.pth'))
     self.useNN = useNN
     self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
 
@@ -182,14 +187,14 @@ class RobotCrazyFlie2D:
       useNN = useNN_override
 
     if useNN:
-      rho_input = torch.zeros(40)
+      rho_input = torch.zeros(self.H)
       for x_neighbor in x_neighbors:
         x_12 = torch.zeros(6)
         x_12[1:3] = x_neighbor[0:2] - x[0:2]
         if self.dim_deepset == 6:
           x_12[4:] = x_neighbor[2:4] - x[2:4]
-        rho_input += self.phi_net(x_12)
-      faz = self.rho_net(rho_input)
+        rho_input += self.phi_S_net(x_12)
+      faz = self.rho_S_net(rho_input)
       return faz[0]
     else:
       return 0.0
