@@ -153,17 +153,33 @@ class RobotTwoCrazyFlies2D:
 
 
 class RobotCrazyFlie2D:
-  def __init__(self, useNN=False):
+  radius_by_type = {
+    'small': 0.15,
+    'small_powerful_motors': 0.15,
+    'large': 0.2,
+  }
+
+  def __init__(self, useNN=False, cftype="small"):
     # x = [py, pz, vy, vz]
     # u = [fdy, fdz]
     self.stateDim = 4
     self.ctrlDim = 2
     self.x_min = [-1, -1, -5, -5]
     self.x_max = [1, 1, 5, 5]
-    self.thrust_to_weight = 2.6
     self.g = 9.81
-    self.mass = 34
-    self.radius = 0.2
+    self.cftype = cftype
+    self.radius = RobotCrazyFlie2D.radius_by_type[self.cftype]
+    if self.cftype == "small":
+      self.thrust_to_weight = 1.4 # default motors: 1.4; upgraded motors: 2.6
+      self.mass = 34 # g
+    elif self.cftype == "small_powerful_motors":
+      self.thrust_to_weight = 2.6 # default motors: 1.4; upgraded motors: 2.6
+      self.mass = 34 # g
+    elif self.cftype == "large":
+      self.thrust_to_weight = 2.1 # max thrust: ~145g; 
+      self.mass = 67 # g
+    else:
+      raise Exception("Unknown cftype!")
 
     self.H = 20 # dimension of the hidden state (output of \phi nets)
     self.rho_L_net = rho_Net(H=self.H)
@@ -181,27 +197,42 @@ class RobotCrazyFlie2D:
     self.kp = 4.0 # 1.0
     self.kd = 4.0 # 2.0
 
-  def compute_Fa(self, x, x_neighbors, useNN_override=None):
+  def min_distance(self, cftype_neighbor):
+    return self.radius + RobotCrazyFlie2D.radius_by_type[cftype_neighbor]
+
+  def compute_Fa(self, x, data_neighbors, useNN_override=None):
     useNN = self.useNN
     if useNN_override is not None:
       useNN = useNN_override
 
     if useNN:
       rho_input = torch.zeros(self.H)
-      for x_neighbor in x_neighbors:
+      for cftype_neighbor, x_neighbor in data_neighbors:
         x_12 = torch.zeros(6)
         x_12[1:3] = x_neighbor[0:2] - x[0:2]
         if self.dim_deepset == 6:
           x_12[4:] = x_neighbor[2:4] - x[2:4]
-        rho_input += self.phi_S_net(x_12)
-      faz = self.rho_S_net(rho_input)
+        if cftype_neighbor == "small" or cftype_neighbor == "small_powerful_motors":
+          rho_input += self.phi_S_net(x_12)
+        elif cftype_neighbor == "large":
+          rho_input += self.phi_L_net(x_12)
+        else:
+          raise Exception("Unknown cftype!")
+
+      if self.cftype == "small" or self.cftype == "small_powerful_motors":
+        faz = self.rho_S_net(rho_input)
+      elif self.cftype == "large":
+        faz = self.rho_L_net(rho_input)
+      else:
+        raise Exception("Unknown cftype!")
+
       return faz[0]
     else:
       return 0.0
 
-  def f(self, x, u, x_neighbors, useNN=None):
+  def f(self, x, u, data_neighbors, useNN=None):
 
-    Fa = self.compute_Fa(x, x_neighbors, useNN)
+    Fa = self.compute_Fa(x, data_neighbors, useNN)
     return torch.stack([
       x[2],
       x[3],

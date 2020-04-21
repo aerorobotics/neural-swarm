@@ -46,12 +46,13 @@ def add_result_figs(robots, pp, field, name, animate = False):
       X2 = getattr(robots[j], 'X_' + field)
       X2 = torch.stack([get_state(X2, t) for t in range(T)])
       dist_12 = torch.norm(X1[:,0:2] - X2[:,0:2], dim=1)
-      dist = torch.min(dist, dist_12)
+      dist_between_shapes = dist_12 - (robots[i].radius + robots[j].radius)
+      dist = torch.min(dist, dist_between_shapes)
 
   fig, ax = plt.subplots()
   ax.plot(dist)
-  ax.axhline(y=2*robots[0].radius, linestyle='--', label="limit")
-  ax.set_title('{} - min distance'.format(name))
+  ax.axhline(y=0, linestyle='--', label="limit")
+  ax.set_title('{} - shape min distance'.format(name))
   pp.savefig(fig)
   plt.close(fig)
 
@@ -127,9 +128,9 @@ def vis_pdf(robots, name='output.pdf'):
   for k, robot in enumerate(robots):
     ax[0].plot(robot.U_rollout[:,0], label="cf{} uy".format(k))
     ax[0].plot(robot.U_rollout[:,1], label="cf{} uz".format(k))
-    ax[1].plot(torch.norm(robot.U_rollout, dim=1), label="cf{} thrust".format(k))
+    line = ax[1].plot(torch.norm(robot.U_rollout, dim=1), label="cf{} thrust".format(k))
+    ax[1].axhline(y=robot.g*robot.thrust_to_weight, color=line[0].get_color(), linestyle='--')
   ax[0].legend()  
-  ax[1].axhline(y=robot.g*robot.thrust_to_weight, linestyle='--', label="limit")
   ax[1].legend()
   ax[1].set_title('Control and thrust')
   pp.savefig(fig)
@@ -157,10 +158,10 @@ def tracking(robots, dt, feedforward=True):
   for t in range(T-1):
     for k, robot in enumerate(robots):
       # compute neighboring states:
-      x_neighbors = []
+      data_neighbors = []
       for k_other, robot_other in enumerate(robots):
         if k != k_other:
-          x_neighbors.append(robot_other.X_rollout[t])
+          data_neighbors.append((robot_other.cftype, robot_other.X_rollout[t]))
 
       # control + forward propagation
       if feedforward and t < robot.U_des.size(0):
@@ -176,9 +177,9 @@ def tracking(robots, dt, feedforward=True):
 
       u = robot.controller(x=robot.X_rollout[t], x_d=x_d, v_d_dot=v_d_dot)
       robot.U_rollout[t] = u
-      dx = robot.f(robot.X_rollout[t], robot.U_rollout[t], x_neighbors, useNN=True)
+      dx = robot.f(robot.X_rollout[t], robot.U_rollout[t], data_neighbors, useNN=True)
       robot.X_rollout[t+1] = robot.X_rollout[t] + dt*dx
-      robot.Fa_rollout[t] = robot.compute_Fa(robot.X_rollout[t], x_neighbors, True)
+      robot.Fa_rollout[t] = robot.compute_Fa(robot.X_rollout[t], data_neighbors, True)
 
   # TODO: disable grad by default...
   for robot in robots:
@@ -197,7 +198,7 @@ if __name__ == '__main__':
   useNN = True
 
   # CF0
-  robot = RobotCrazyFlie2D(useNN=useNN)
+  robot = RobotCrazyFlie2D(useNN=useNN, cftype="small")
   robot.x0 = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
   robot.xf = torch.tensor([0.5,0,0,0], dtype=torch.float32)
   robots.append(robot)
@@ -205,24 +206,24 @@ if __name__ == '__main__':
   # robots.append(robot)
 
   # CF1
-  robot = RobotCrazyFlie2D(useNN=useNN)
+  robot = RobotCrazyFlie2D(useNN=useNN, cftype="large")
   robot.x0 = torch.tensor([0.5,0,0,0], dtype=torch.float32)
   robot.xf = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
   robots.append(robot)
   # robot = pickle.load( open( "robot1.p", "rb" ) )
   # robots.append(robot)
 
-  # CF2
-  robot = RobotCrazyFlie2D(useNN=useNN)
-  robot.x0 = torch.tensor([-0.0,0,0,0], dtype=torch.float32)
-  robot.xf = torch.tensor([1.0,0,0,0], dtype=torch.float32)
-  robots.append(robot)
+  # # CF2
+  # robot = RobotCrazyFlie2D(useNN=useNN)
+  # robot.x0 = torch.tensor([-0.0,0,0,0], dtype=torch.float32)
+  # robot.xf = torch.tensor([1.0,0,0,0], dtype=torch.float32)
+  # robots.append(robot)
 
-  # CF3
-  robot = RobotCrazyFlie2D(useNN=useNN)
-  robot.x0 = torch.tensor([1.0,0,0,0], dtype=torch.float32)
-  robot.xf = torch.tensor([0.0,0,0,0], dtype=torch.float32)
-  robots.append(robot)
+  # # CF3
+  # robot = RobotCrazyFlie2D(useNN=useNN)
+  # robot.x0 = torch.tensor([1.0,0,0,0], dtype=torch.float32)
+  # robot.xf = torch.tensor([0.0,0,0,0], dtype=torch.float32)
+  # robots.append(robot)
 
   # # Variant 1: fully sequential
 
@@ -250,10 +251,10 @@ if __name__ == '__main__':
 
     for k, robot in enumerate(robots):
       print("Tree search for robot {}".format(k))
-      other_x = [r.X_treesearch for r in robots[0:k]]
+      data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:k]]
 
       # run tree search to find initial solution
-      x, u = tree_search(robot, robot.x0, robot.xf, dt, other_x, prop_iter=4, iters=10000, top_k=100, trials=3)
+      x, u = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=4, iters=10000, top_k=100, trials=5)
       robot.X_treesearch = x
       robot.U_treesearch = u
       # setup for later iterative refinement
@@ -278,8 +279,8 @@ if __name__ == '__main__':
     for idx in permutation:
       print("SCP (min xf) for robot {}".format(idx))
       robot = robots[idx]
-      other_x = [r.X_scpminxf for r in robots[0:idx] + robots[idx+1:]]
-      X1, U1, X1_integration, obj_value = scp_min_xf(robot, robot.X_scpminxf, robot.U_scpminxf, robot.xf, dt, other_x, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
+      data_neighbors = [(r.cftype, r.X_scpminxf) for r in robots[0:idx] + robots[idx+1:]]
+      X1, U1, X1_integration, obj_value = scp_min_xf(robot, robot.X_scpminxf, robot.U_scpminxf, robot.xf, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
       robot.X_scpminxf = X1[-1]
       robot.U_scpminxf = U1[-1]
       robot.obj_values_scpminxf.append(obj_value)
@@ -299,9 +300,9 @@ if __name__ == '__main__':
     for idx in permutation:
       print("SCP (min u) for robot {}".format(idx))
       robot = robots[idx]
-      other_x = [r.X_des for r in robots[0:idx] + robots[idx+1:]]
+      data_neighbors = [(r.cftype, r.X_des) for r in robots[0:idx] + robots[idx+1:]]
 
-      X2, U2, X2_integration, obj_value = scp(robot, robot.X_des, robot.U_des, dt, other_x, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
+      X2, U2, X2_integration, obj_value = scp(robot, robot.X_des, robot.U_des, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
       robot.X_des = X2[-1]
       robot.U_des = U2[-1]
       robot.obj_values_des.append(obj_value)

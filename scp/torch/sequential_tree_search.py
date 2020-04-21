@@ -6,15 +6,15 @@ import heapq
 def compute_reward(x, xf):
   return -(np.linalg.norm(x[0:2] - xf[0:2])) - 0.1 * np.linalg.norm(x[2:4] - xf[2:4])
 
-def state_valid(robot, x, x_neighbors):
+def state_valid(robot, x, data_neighbors):
   # check if within the space
   if (x < np.array(robot.x_min)).any() or (x > np.array(robot.x_max)).any():
     return False
 
   # check for collisions with neighbors
-  for x_neighbor in x_neighbors:
+  for cftype_neighbor, x_neighbor in data_neighbors:
     dist = np.linalg.norm(x[0:2] - x_neighbor.numpy()[0:2])
-    if dist < 2 * robot.radius:
+    if dist < robot.min_distance(cftype_neighbor):
       return False
 
   return True
@@ -30,7 +30,7 @@ def sample_vector(dim,max_norm,num_points=1):
     p = np.multiply(x,frtiled)
     return p
 
-def tree_search(robot, x0, xf, dt, other_x, prop_iter=2, iters=100000, top_k=100, trials=10):
+def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, trials=10):
 
   xf = xf.detach().numpy()
 
@@ -78,26 +78,26 @@ def tree_search(robot, x0, xf, dt, other_x, prop_iter=2, iters=100000, top_k=100
       # compute neighbors
       nx_idx = timesteps[idx]
       nx_idx_next = timesteps[i]
-      x_neighbors = []
-      x_neighbors_next = []
-      for nx in other_x:
-        if nx.shape[0] > nx_idx:
-          x_neighbors.append(nx[nx_idx,:].detach())
+      data_neighbors_i = []
+      data_neighbors_next = []
+      for cftype_neighbor, x_neighbor in data_neighbors:
+        if x_neighbor.shape[0] > nx_idx:
+          data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
         else:
-          x_neighbors.append(nx[-1,:].detach())
-        if nx.shape[0] > nx_idx_next:
-          x_neighbors_next.append(nx[nx_idx_next,:].detach())
+          data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+        if x_neighbor.shape[0] > nx_idx_next:
+          data_neighbors_next.append((cftype_neighbor, x_neighbor[nx_idx_next,:].detach()))
         else:
-          x_neighbors_next.append(nx[-1,:].detach())
+          data_neighbors_next.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
       # forward propagate
       # NOTE: here, we do not do collision checking (or updating of x_neighbors) between prop_iter for efficiency
       states_temp[i,0] = states[idx]
       for k in range(1,prop_iter+1):
 
-        states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), x_neighbors).detach().numpy() * dt
+        states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
 
-      if not state_valid(robot, states_temp[i,-1], x_neighbors_next):
+      if not state_valid(robot, states_temp[i,-1], data_neighbors_next):
         continue
 
       # update data structures

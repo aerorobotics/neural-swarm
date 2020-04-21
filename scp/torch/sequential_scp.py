@@ -14,10 +14,10 @@ def unit_vectors(length):
     result.append(x)
   return result
 
-def jacobian(robot, xbar, ubar, other_x):
+def jacobian(robot, xbar, ubar, data_neighbors):
   xbar.requires_grad = True
   ubar.requires_grad = True
-  y = robot.f(xbar, ubar, other_x)
+  y = robot.f(xbar, ubar, data_neighbors)
   result = [torch.autograd.grad(outputs=[y], inputs=[xbar], grad_outputs=[unit], retain_graph=True, allow_unused=True)[0] for unit in unit_vectors(y.size(0))]
   jacobianA = torch.stack(result, dim=0)
   result = [torch.autograd.grad(outputs=[y], inputs=[ubar], grad_outputs=[unit], retain_graph=True, allow_unused=True)[0] for unit in unit_vectors(y.size(0))]
@@ -28,16 +28,16 @@ def jacobian(robot, xbar, ubar, other_x):
 
   return jacobianA, jacobianB, y.detach()
 
-def get_x_neighbors(other_x, t):
-  x_neighbors = []
-  for xn in other_x:
-    if t < xn.shape[0]:
-      x_neighbors.append(xn[t].detach())
+def get_data_neighbors(data_neighbors, t):
+  data_neighbors_t = []
+  for cftype_neighbor, x_neighbor in data_neighbors:
+    if t < x_neighbor.shape[0]:
+      data_neighbors_t.append((cftype_neighbor, x_neighbor[t].detach()))
     else:
-      x_neighbors.append(xn[-1].detach())
-  return x_neighbors
+      data_neighbors_t.append((cftype_neighbor, x_neighbor[-1].detach()))
+  return data_neighbors_t
 
-def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
+def scp(robot, initial_x, initial_u, dt, data_neighbors, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
   X, U = [initial_x], [initial_u]
   X_integration = [None]
 
@@ -75,8 +75,8 @@ def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2,
       xbar = xprev[t]
       ubar = uprev[t]
 
-      x_neighbors = get_x_neighbors(other_x, t)
-      A, B, y = jacobian(robot, xbar, ubar, x_neighbors)
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
+      A, B, y = jacobian(robot, xbar, ubar, data_neighbors_t)
       # simple version:
       constraints.append(
         x[t+1] == x[t] + dt * (y.numpy() + A.numpy() @ (x[t] - xbar.numpy()) + B.numpy() @ (u[t] - ubar.numpy()))
@@ -100,12 +100,13 @@ def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2,
         ])
 
       # collision check
-      x_neighbors = get_x_neighbors(other_x, t)
-      for xn in x_neighbors:
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
+      for cftype_neighbor, xn in data_neighbors_t:
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xn[0], xbar[1]-xn[1]])
+        min_dist = robot.min_distance(cftype_neighbor)
         constraints.extend([
-        (x[t, 0]-xn[0])*(xbar[0]-xn[0]) + (x[t, 1]-xn[1])*(xbar[1]-xn[1]) >= 2*robot.radius*dist,
+        (x[t, 0]-xn[0])*(xbar[0]-xn[0]) + (x[t, 1]-xn[1])*(xbar[1]-xn[1]) >= min_dist*dist,
         ])
 
     for t in range(0, T-1):
@@ -143,14 +144,14 @@ def scp(robot, initial_x, initial_u, dt, other_x, trust_region=False, trust_x=2,
     x_int = torch.zeros((T, robot.stateDim))
     x_int[0] = x0
     for t in range(0, T-1):
-      x_neighbors = get_x_neighbors(other_x, t)
-      x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t], x_neighbors))
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
+      x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t], data_neighbors_t))
     X_integration.append(x_int.detach())
 
   return X, U, X_integration, prob.value
 
 
-def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
+def scp_min_xf(robot, initial_x, initial_u, xf, dt, data_neighbors, trust_region=False, trust_x=2, trust_u=2, num_iterations=10):
   X, U = [initial_x], [initial_u]
   X_integration = [None]
 
@@ -189,9 +190,9 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
       ubar = uprev[t]
 
       # print(other_x)
-      x_neighbors = get_x_neighbors(other_x, t)
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
       # print(x_neighbors)
-      A, B, y = jacobian(robot, xbar, ubar, x_neighbors)
+      A, B, y = jacobian(robot, xbar, ubar, data_neighbors_t)
       # simple version:
       constraints.append(
         x[t+1] == x[t] + dt * (y.numpy() + A.numpy() @ (x[t] - xbar.numpy()) + B.numpy() @ (u[t] - ubar.numpy()))
@@ -215,12 +216,13 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
         ])
 
       # collision check
-      x_neighbors = get_x_neighbors(other_x, t)
-      for xn in x_neighbors:
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
+      for cftype_neighbor, xn in data_neighbors_t:
         xbar = xprev[t]
         dist = np.linalg.norm([xbar[0]-xn[0], xbar[1]-xn[1]])
+        min_dist = robot.min_distance(cftype_neighbor)
         constraints.extend([
-        (x[t, 0]-xn[0])*(xbar[0]-xn[0]) + (x[t, 1]-xn[1])*(xbar[1]-xn[1]) >= 2*robot.radius*dist,
+        (x[t, 0]-xn[0])*(xbar[0]-xn[0]) + (x[t, 1]-xn[1])*(xbar[1]-xn[1]) >= min_dist*dist,
         ])
 
     for t in range(0, T-1):
@@ -258,8 +260,8 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, other_x, trust_region=False,
     x_int = torch.zeros((T, robot.stateDim))
     x_int[0] = x0
     for t in range(0, T-1):
-      x_neighbors = get_x_neighbors(other_x, t)
-      x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t], x_neighbors))
+      data_neighbors_t = get_data_neighbors(data_neighbors, t)
+      x_int[t+1] = x_int[t] + dt * (robot.f(x_int[t], uprev[t], data_neighbors_t))
     X_integration.append(x_int.detach())
 
     if prob.value < 1e-8:

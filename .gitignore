@@ -1,4 +1,5 @@
 gurobi.log
+*.p
 __pycache__/
 output.pdf
 PlanwithNN.pdf
