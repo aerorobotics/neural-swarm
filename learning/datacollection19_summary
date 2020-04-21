@@ -1,0 +1,31 @@
+# Note that all these cfs are with new IMU
+
+# L-L random walk; cf101 & cf102; total: 127.55s
+# ./random_walk_large_large/
+# 00     01
+# 63.73s 63.82s
+
+# L-S random walk; cf102 & cf50; total: 127.18s
+# ./random_walk_large_small/
+# 02     03
+# 63.74s 63.44s
+
+# S-S random walk; cf50 & cf51; total: 127.45s
+# ./random_walk_small_small/
+# 04     05
+# 63.62s 63.83s
+
+# L-L swap; cf101 & cf102; total: 59.77s
+# ./swap_large_large/
+# 02
+# 59.77s 
+
+# S-S swap; cf50 & cf51; total: 59.92s
+# ./swap_small_small/
+# 02
+# 59.92s
+
+# L-S swap; cf102 & cf50; total: 119.59s
+# ./swap_large_small/
+# 00(LS) 01(SL)
+# 59.79s 59.80s
