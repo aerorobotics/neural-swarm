@@ -299,7 +299,7 @@ if __name__ == '__main__':
     for idx in permutation:
       print("SCP (min u) for robot {}".format(idx))
       robot = robots[idx]
-      other_x = [r.X_scpminxf for r in robots[0:idx] + robots[idx+1:]]
+      other_x = [r.X_des for r in robots[0:idx] + robots[idx+1:]]
 
       X2, U2, X2_integration, obj_value = scp(robot, robot.X_des, robot.U_des, dt, other_x, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
       robot.X_des = X2[-1]
