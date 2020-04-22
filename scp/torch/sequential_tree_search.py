@@ -30,7 +30,7 @@ def sample_vector(dim,max_norm,num_points=1):
     p = np.multiply(x,frtiled)
     return p
 
-def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, trials=10):
+def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, trials=10, cost_limit = 1e6):
 
   xf = xf.detach().numpy()
 
@@ -42,8 +42,6 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
   reward = np.zeros((iters,))
   cost = np.zeros((iters,))
 
-  cost_limit = 1e6
-
   for trial in range(trials):
     print("Run trial {} with cost limit {}".format(trial, cost_limit))
 
@@ -54,6 +52,9 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
     best_reward = reward[0]
     best_i = 0
+    best_cost = cost_limit
+    sol_x = None
+    sol_u = None
 
     while i < iters:
       # if i % 1000 == 0:
@@ -117,6 +118,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
         best_i = i
         if best_reward > -0.1:
           print("Found solution!", i, cost[i])
+          best_cost = cost[i]
           cost_limit = 0.9 * cost[i]
 
           # generate solution
@@ -139,4 +141,4 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       i+=1
 
-  return sol_x, sol_u
+  return sol_x, sol_u, best_cost

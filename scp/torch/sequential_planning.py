@@ -93,7 +93,27 @@ def add_result_figs(robots, pp, field, name, animate = False):
       pp.savefig(fig)
       plt.close(fig)
 
-def vis_pdf(robots, name='output.pdf'):
+def compute_stats(robots, dt):
+  stats = dict()
+
+  # compute position tracking error and control effort statistics
+  tracking_errors = [0]
+  control_efforts = [0]
+  for k, robot in enumerate(robots):
+    tracking_error = np.sum(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:2] - robot.X_des[:,0:2], axis=1))
+    tracking_errors.append(tracking_error)
+    tracking_errors[0] += tracking_error
+
+    control_effort = np.sum(np.linalg.norm(robot.U_rollout, axis=1)) * dt
+    control_efforts.append(control_effort)
+    control_efforts[0] += control_effort
+
+  stats['tracking_errors'] = tracking_errors
+  stats['control_efforts'] = control_efforts
+
+  return stats
+
+def vis_pdf(robots, stats, name='output.pdf'):
   # scp_epoch = len(X)
 
   pp = PdfPages(name)
@@ -135,6 +155,20 @@ def vis_pdf(robots, name='output.pdf'):
   ax[1].set_title('Control and thrust')
   pp.savefig(fig)
   plt.close()
+
+  tracking_errors = stats['tracking_errors']
+  control_efforts = stats['control_efforts']
+
+  fig, ax = plt.subplots(1, 2)
+  ax[0].set_title('Tracking errors')
+  ax[0].bar(range(len(tracking_errors)), tracking_errors)
+
+  ax[1].set_title('Control efforts')
+  ax[1].bar(range(len(control_efforts)), control_efforts)
+
+  pp.savefig(fig)
+  plt.close()
+
 
   pp.close()
   subprocess.call(["xdg-open", name])
@@ -192,10 +226,9 @@ def tracking(robots, dt, feedforward=True):
   # print("energy: ", energy, " tracking error: ", tracking_error)
   # return X.detach(), U.detach(), Fa.detach()
 
-if __name__ == '__main__':
+def sequential_planning(useNN, file_name="output.pdf"):
   dt = 0.025
   robots = []
-  useNN = True
 
   # CF0
   robot = RobotCrazyFlie2D(useNN=useNN, cftype="small")
@@ -247,20 +280,30 @@ if __name__ == '__main__':
 
   # Variant 2: sequential tree search, followed by iterative SCP
 
+  permutation = list(range(len(robots)))
+
   if True:
+    cost_limits = np.repeat(1e6, len(robots))
 
-    for k, robot in enumerate(robots):
-      print("Tree search for robot {}".format(k))
-      data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:k]]
+    while (cost_limits == 1e6).any():
+      for trial in range(5):
+        print("Tree search trial {}".format(trial))
+        random.shuffle(permutation)
+        for idx in permutation:
+          print("Tree search for robot {}".format(idx))
+          robot = robots[idx]
+          data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:idx] + robots[idx+1:] if hasattr(r, 'X_treesearch')]
 
-      # run tree search to find initial solution
-      x, u = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=4, iters=10000, top_k=100, trials=5)
-      robot.X_treesearch = x
-      robot.U_treesearch = u
-      # setup for later iterative refinement
-      robot.X_scpminxf = x
-      robot.U_scpminxf = u
-      robot.obj_values_scpminxf = []
+          # run tree search to find initial solution
+          x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=4, iters=10000, top_k=100, trials=1, cost_limit=cost_limits[idx])
+          if x is not None:
+            cost_limits[idx] = 0.9 * best_cost
+            robot.X_treesearch = x
+            robot.U_treesearch = u
+            # setup for later iterative refinement
+            robot.X_scpminxf = x
+            robot.U_scpminxf = u
+            robot.obj_values_scpminxf = []
 
     pickle.dump( robots, open( "robots.p", "wb" ) )
   else:
@@ -270,7 +313,7 @@ if __name__ == '__main__':
   # exit()
 
 
-  permutation = list(range(len(robots)))
+
 
   # run scp (min xf) to exactly go to the goal
   for iteration in range(100):
@@ -311,4 +354,10 @@ if __name__ == '__main__':
   # pickle.dump( robots[1], open( "robot1.p", "wb" ) )
 
   tracking(robots, dt)
-  vis_pdf(robots, "output.pdf")
+  stats = compute_stats(robots, dt)
+  vis_pdf(robots, stats, file_name)
+
+  return stats
+
+if __name__ == '__main__':
+  sequential_planning(useNN=True, file_name="output.pdf")
