@@ -4,7 +4,8 @@ import torch
 import heapq
 
 def compute_reward(x, xf):
-  return -(np.linalg.norm(x[0:2] - xf[0:2])) - 0.1 * np.linalg.norm(x[2:4] - xf[2:4])
+  velIdx = x.shape[0] // 2
+  return -(np.linalg.norm(x[0:velIdx] - xf[0:velIdx])) - 0.1 * np.linalg.norm(x[velIdx:] - xf[velIdx])
 
 def state_valid(robot, x, data_neighbors):
   # check if within the space
@@ -12,8 +13,9 @@ def state_valid(robot, x, data_neighbors):
     return False
 
   # check for collisions with neighbors
+  velIdx = x.shape[0] // 2
   for cftype_neighbor, x_neighbor in data_neighbors:
-    dist = np.linalg.norm(x[0:2] - x_neighbor.numpy()[0:2])
+    dist = np.linalg.norm(x[0:velIdx] - x_neighbor.numpy()[0:velIdx])
     if dist < robot.min_distance(cftype_neighbor):
       return False
 
