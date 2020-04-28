@@ -1,5 +1,6 @@
 from robots import RobotCrazyFlie2D, RobotCrazyFlie3D
-from sequential_tree_search import tree_search
+# from sequential_tree_search import tree_search
+from sequential_tree_search_ao_rrt import tree_search
 import torch
 import math
 from sequential_scp import scp_min_xf, scp
