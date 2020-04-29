@@ -4,10 +4,14 @@ import torch
 import hnswlib
 
 def state_to_index(x):
-  return x * np.array([1,1,0.05,0.05])
+  velIdx = x.shape[0] // 2
+  if velIdx == 2:
+    return x * np.array([1,1,0.05,0.05])
+  else:
+    return x * np.array([1,1,1,0.05,0.05,0.05])
 
-def state_from_index(x):
-  return x / np.array([1,1,0.05,0.05])
+# def state_from_index(x):
+#   return x / np.array([1,1,0.05,0.05])
 
 def state_valid(robot, x, data_neighbors):
   # check if within the space

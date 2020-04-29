@@ -312,12 +312,13 @@ class RobotCrazyFlie3D:
       for cftype_neighbor, x_neighbor in data_neighbors:
         x_12 = torch.zeros(6)
         x_12 = (x_neighbor - x).float()
-        if cftype_neighbor == "small" or cftype_neighbor == "small_powerful_motors":
-          rho_input += self.phi_S_net(x_12)
-        elif cftype_neighbor == "large":
-          rho_input += self.phi_L_net(x_12)
-        else:
-          raise Exception("Unknown cftype!")
+        if abs(x_12[0]) < 0.2 and abs(x_12[1]) < 0.2 and abs(x_12[3]) < 1.5:
+          if cftype_neighbor == "small" or cftype_neighbor == "small_powerful_motors":
+            rho_input += self.phi_S_net(x_12)
+          elif cftype_neighbor == "large":
+            rho_input += self.phi_L_net(x_12)
+          else:
+            raise Exception("Unknown cftype!")
 
       if self.cftype == "small" or self.cftype == "small_powerful_motors":
         faz = self.rho_S_net(rho_input)
