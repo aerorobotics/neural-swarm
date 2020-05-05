@@ -1,0 +1,46 @@
+Experiment for heterogeneous robots in swapping and random walk tasks (three robot interactions; 1 robot + ground).
+
+CF50, CF51, CF52: Crazyflie 2.1 (i.e., new IMU), unmodified, use defaultcf.txt for system id.
+CF101, CF102: Crazyflie 2.1 (i.e., new IMU), on parrot frame, use parrot_frame.txt for system id. 
+
+*************************************************************
+
+# L-Ground random walk; cf101; 126.51s
+# ./random_walk_large_ground/
+# 01     02
+# 63.62s 62.89s
+
+# S-Ground random walk; cf50; 127.33s
+# ./random_walk_small_ground/
+# 01     02
+# 63.71s 63.62s
+
+# SLL random walk; cf50 & cf101 & cf102; 127.58s
+# ./random_walk_sll/
+# 09     10
+# 63.74s 63.84s
+
+# LSL swap; cf50 & cf101 & cf102; 15.98s
+# ./swap_lsl/
+# 06
+# 15.98s
+
+# SSL random walk; cf50 & cf52 & cf101; 127.66s
+# ./random_walk_ssl/
+# 04     13
+# 63.83s 63.83s
+
+# SLS swap; cf50 & cf52 & cf101; 16.01s
+# ./swap_sls/
+# 03
+# 16.01s
+
+# SSS random walk; cf50 & cf51 & cf52; 127.59s
+# ./random_walk_sss/
+# 00     01
+# 63.83s 63.76s
+
+# SSS swap; cf50 & cf51 & cf52; 17.98s
+# ./swap_sss/
+# 00
+# 17.98s

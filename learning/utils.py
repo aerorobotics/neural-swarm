@@ -182,64 +182,107 @@ def Fa(Data, m, g, p_00, p_10, p_01, p_20, p_11):
 
 # Get numpy data input and output pair
 # s can be used for data type
-def get_data(D1, D2, s):
+def get_data(D1, D2, D3=None, s=0):
     typ = 'fa_imu'
     g = 9.81
     L = D1['time'].shape[0]
-    data_input = np.zeros([L, 7])
+    data_input = np.zeros([L, 13])
     data_output = np.zeros([L, 3])
-    data_input[:, :3] = D2['pos'] - D1['pos']
-    data_input[:, 3:6] = D2['vel'] - D1['vel']
-    data_input[:, 6] = s
+    if s == 0 or s == 1:
+        # ground effect
+        data_input[:, :3] = 0 - D1['pos']
+        data_input[:, 3:6] = 0 - D1['vel']
+    else:
+        data_input[:, :3] = D2['pos'] - D1['pos']
+        data_input[:, 3:6] = D2['vel'] - D1['vel']
+    if D3 is not None:
+        data_input[:, 6:9] = D3['pos'] - D1['pos']
+        data_input[:, 9:12] = D3['vel'] - D1['vel']
+    data_input[:, -1] = s
     data_output[:, :] = D1[typ] / g * 1000 # Newton -> gram
     # print(data_input.shape, data_output.shape)
     
     return data_input, data_output
 
 # Histogram visualization of numpy data input and output pair
-def hist(data_input, data_output, name):
+def hist(pp, data_input, data_output, name):
     plt.figure(figsize=(12,12))
-    plt.subplot(3, 4, 1)
+    plt.subplot(5, 4, 1)
     plt.hist(data_input[:, 0], 50, density=True)
-    plt.title(name+': x')
-    plt.subplot(3, 4, 2)
+    plt.title(name+': x1')
+    plt.subplot(5, 4, 2)
     plt.hist(data_input[:, 1], 50, density=True)
-    plt.title('y')
-    plt.subplot(3, 4, 3)
+    plt.title('y1')
+    plt.subplot(5, 4, 3)
     plt.hist(data_input[:, 2], 50, density=True)
-    plt.title('z')
-    plt.subplot(3, 4, 4)
+    plt.title('z1')
+    plt.subplot(5, 4, 4)
     plt.scatter(data_input[:, 1], data_input[:, 2], s=0.1)
-    plt.title('y-z')
-    plt.xlabel('y')
-    plt.ylabel('z')
+    plt.title('y1-z1')
+    plt.xlabel('y1')
+    plt.ylabel('z1')
     
-    plt.subplot(3, 4, 5)
+    plt.subplot(5, 4, 5)
     plt.hist(data_input[:, 3], 50, density=True)
-    plt.title('vx')
-    plt.subplot(3, 4, 6)
+    plt.title('vx1')
+    plt.subplot(5, 4, 6)
     plt.hist(data_input[:, 4], 50, density=True)
-    plt.title('vy')
-    plt.subplot(3, 4, 7)
+    plt.title('vy1')
+    plt.subplot(5, 4, 7)
     plt.hist(data_input[:, 5], 50, density=True)
-    plt.title('vz')
-    plt.subplot(3, 4, 8)
+    plt.title('vz1')
+    plt.subplot(5, 4, 8)
     plt.scatter(data_input[:, 4], data_input[:, 5], s=0.1)
-    plt.title('vy-vz')
-    plt.xlabel('vy')
-    plt.ylabel('vz')
+    plt.title('vy1-vz1')
+    plt.xlabel('vy1')
+    plt.ylabel('vz1')
     
-    plt.subplot(3, 4, 9)
+    plt.subplot(5, 4, 9)
+    plt.hist(data_input[:, 6], 50, density=True)
+    plt.title(name+': x2')
+    plt.subplot(5, 4, 10)
+    plt.hist(data_input[:, 7], 50, density=True)
+    plt.title('y2')
+    plt.subplot(5, 4, 11)
+    plt.hist(data_input[:, 8], 50, density=True)
+    plt.title('z2')
+    plt.subplot(5, 4, 12)
+    plt.scatter(data_input[:, 7], data_input[:, 8], s=0.1)
+    plt.title('y2-z2')
+    plt.xlabel('y2')
+    plt.ylabel('z2')
+    
+    plt.subplot(5, 4, 13)
+    plt.hist(data_input[:, 9], 50, density=True)
+    plt.title('vx2')
+    plt.subplot(5, 4, 14)
+    plt.hist(data_input[:, 10], 50, density=True)
+    plt.title('vy2')
+    plt.subplot(5, 4, 15)
+    plt.hist(data_input[:, 11], 50, density=True)
+    plt.title('vz2')
+    plt.subplot(5, 4, 16)
+    plt.scatter(data_input[:, 10], data_input[:, 11], s=0.1)
+    plt.title('vy2-vz2')
+    plt.xlabel('vy2')
+    plt.ylabel('vz2')
+
+    plt.subplot(5, 4, 17)
     plt.hist(data_output[:, 0], 50, density=True)
     plt.title('fa_x')
-    plt.subplot(3, 4, 10)
+    plt.subplot(5, 4, 18)
     plt.hist(data_output[:, 1], 50, density=True)
     plt.title('fa_y')
-    plt.subplot(3, 4, 11)
+    plt.subplot(5, 4, 19)
     plt.hist(data_output[:, 2], 50, density=True)
     plt.title('fa_z')
+    plt.subplot(5, 4, 20)
+    plt.plot(data_input[:, -1])
+    plt.title('s')
     plt.tight_layout()
-    plt.show()
+    pp.savefig()
+    plt.close()
+    #plt.show()
 
 # Dataset in torch
 class MyDataset(Dataset):
