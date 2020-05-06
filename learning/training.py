@@ -432,7 +432,7 @@ for i, data in enumerate(trainloader_SS2S, 0):
     mixed.append(data)
 
 # Spectral normalization
-def Lip(net, lip=3.5):
+def Lip(net, lip=3):
     for param in net.parameters():
         M = param.detach().numpy()
         if M.ndim > 1:
@@ -440,7 +440,7 @@ def Lip(net, lip=3.5):
             if s > lip:
                 param.data = param / s * lip
 
-for epoch in range(120):  # loop over the dataset multiple times
+for epoch in range(200):  # loop over the dataset multiple times
     running_loss = 0.0
     count = np.copy(Count)
     shuffle(mixed)
