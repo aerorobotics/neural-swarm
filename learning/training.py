@@ -14,6 +14,7 @@ import os
 output_name = "test"
 lip = 3
 num_epochs = 5
+rasterized = True # set to True, to rasterize the pictures in the PDF
 
 # This might throw an exception as a safety measure to avoid
 # that previously learned files are overwritten
@@ -331,17 +332,17 @@ if True:
     # visualization of data distribution
     # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
     # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
-    hist(pp, data_input_Ge2L, data_output_Ge2L, name='Ge2L')
-    hist(pp, data_input_Ge2S, data_output_Ge2S, name='Ge2S')
-    hist(pp, data_input_L2L, data_output_L2L, name='L2L')
-    hist(pp, data_input_S2S, data_output_S2S, name='S2S')
-    hist(pp, data_input_L2S, data_output_L2S, name='L2S')
-    hist(pp, data_input_S2L, data_output_S2L, name='S2L')
-    hist(pp, data_input_SS2L, data_output_SS2L, name='SS2L')
-    hist(pp, data_input_SL2L, data_output_SL2L, name='SL2L')
-    hist(pp, data_input_LL2S, data_output_LL2S, name='LL2S')
-    hist(pp, data_input_SL2S, data_output_SL2S, name='SL2S')
-    hist(pp, data_input_SS2S, data_output_SS2S, name='SS2S')
+    hist(pp, data_input_Ge2L, data_output_Ge2L, 'Ge2L', rasterized)
+    hist(pp, data_input_Ge2S, data_output_Ge2S, 'Ge2S', rasterized)
+    hist(pp, data_input_L2L, data_output_L2L, 'L2L', rasterized)
+    hist(pp, data_input_S2S, data_output_S2S, 'S2S', rasterized)
+    hist(pp, data_input_L2S, data_output_L2S, 'L2S', rasterized)
+    hist(pp, data_input_S2L, data_output_S2L, 'S2L', rasterized)
+    hist(pp, data_input_SS2L, data_output_SS2L, 'SS2L', rasterized)
+    hist(pp, data_input_SL2L, data_output_SL2L, 'SL2L', rasterized)
+    hist(pp, data_input_LL2S, data_output_LL2S, 'LL2S', rasterized)
+    hist(pp, data_input_SL2S, data_output_SL2S, 'SL2S', rasterized)
+    hist(pp, data_input_SS2S, data_output_SS2S, 'SS2S', rasterized)
 
 # generate torch trainset and trainloader
 trainset_Ge2L, trainloader_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L)
@@ -536,7 +537,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
 print('Training finished!')
 plt.figure()
-plt.plot(Loss_sn)
+plt.plot(Loss_sn, rasterized=rasterized)
 plt.title('Training loss')
 pp.savefig()
 plt.close()
@@ -570,7 +571,7 @@ rho_L_net.load_state_dict(torch.load('../data/models/{}/rho_L.pth'.format(output
 rho_S_net.load_state_dict(torch.load('../data/models/{}/rho_S.pth'.format(output_name)))
 phi_L_net.load_state_dict(torch.load('../data/models/{}/phi_L.pth'.format(output_name)))
 phi_S_net.load_state_dict(torch.load('../data/models/{}/phi_S.pth'.format(output_name)))
-vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net)
+vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized)
 
 # Val of NNs
 # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
@@ -614,12 +615,12 @@ def Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_
 def validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input, data_output, ss, ee, name):
     Fa_pred = Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net)
     plt.figure(figsize=(12, 9))
-    plt.subplot(2, 1, 1)
+    plt.subplot(2, 1, 1, rasterized=rasterized)
     plt.plot(data_input[:, :3])
     plt.legend(['dx', 'dy', 'dz'])
     plt.grid()
     plt.title('Validation: '+name)
-    plt.subplot(2, 1, 2)
+    plt.subplot(2, 1, 2, rasterized=rasterized)
     plt.plot(data_output[:, 2])
     plt.hlines(y=0, xmin=0, xmax=ee-ss, colors='r')
     plt.plot(Fa_pred)

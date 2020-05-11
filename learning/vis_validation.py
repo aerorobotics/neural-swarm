@@ -47,12 +47,12 @@ def heatmap(phi_1_net, rho_net, phi_2_net=None, pos1=[0,0,0.5], vel1=[0,0,0], po
     
     return y, z, fa_heatmap[0, :, :]
 
-def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
+def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized):
     # visualization
     vmin = -20
     vmax = 5
     plt.figure(figsize=(20,16))
-    plt.subplot(5, 4, 1)
+    plt.subplot(5, 4, 1, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_L_net, pos1=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -61,7 +61,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.colorbar()
     plt.tick_params(labelsize = 13)
 
-    plt.subplot(5, 4, 2)
+    plt.subplot(5, 4, 2, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_S_net, pos1=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -70,7 +70,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.colorbar()
     plt.tick_params(labelsize = 13)
 
-    plt.subplot(5, 4, 5)
+    plt.subplot(5, 4, 5, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_L_net)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -80,7 +80,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 6)
+    plt.subplot(5, 4, 6, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_S_net)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -90,7 +90,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 7)
+    plt.subplot(5, 4, 7, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_S_net)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -100,7 +100,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 8)
+    plt.subplot(5, 4, 8, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_L_net)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -110,7 +110,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=10, color="black")
     
-    plt.subplot(5, 4, 9)
+    plt.subplot(5, 4, 9, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_L_net, phi_2_net=phi_L_net, pos1=[0,0,0], pos2=[0,0,0.5], vel2=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -120,7 +120,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=20, color="black")
 
-    plt.subplot(5, 4, 10)
+    plt.subplot(5, 4, 10, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_L_net, phi_2_net=phi_S_net, pos1=[0,0,0], pos2=[0,0,0.5], vel2=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -130,7 +130,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 11)
+    plt.subplot(5, 4, 11, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_S_net, phi_2_net=phi_L_net, pos1=[0,0,0], pos2=[0,0,0.5], vel2=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -140,7 +140,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.tick_params(labelsize = 13)
     plt.plot([0], [0.5], marker='*', markersize=20, color="black")
 
-    plt.subplot(5, 4, 12)
+    plt.subplot(5, 4, 12, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_G_net, rho_S_net, phi_2_net=phi_S_net, pos1=[0,0,0], pos2=[0,0,0.5], vel2=[0,0,0], GE=True)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -154,7 +154,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     pos2 = [0, 0.1, 0.5]
     vel1 = [0, 0, 0]
     vel2 = [0 ,0, 0]
-    plt.subplot(5, 4, 13)
+    plt.subplot(5, 4, 13, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_L_net, phi_2_net=phi_S_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -165,7 +165,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=10, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 14)
+    plt.subplot(5, 4, 14, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_L_net, phi_2_net=phi_L_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -176,7 +176,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=20, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=20, color="black")
 
-    plt.subplot(5, 4, 15)
+    plt.subplot(5, 4, 15, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_L_net, phi_2_net=phi_S_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -187,7 +187,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=20, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 16)
+    plt.subplot(5, 4, 16, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_L_net, phi_2_net=phi_L_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     # plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -198,7 +198,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=10, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=20, color="black")
 
-    plt.subplot(5, 4, 17)
+    plt.subplot(5, 4, 17, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_S_net, phi_2_net=phi_S_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -209,7 +209,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=10, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 18)
+    plt.subplot(5, 4, 18, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_S_net, phi_2_net=phi_L_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -220,7 +220,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=20, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=20, color="black")
 
-    plt.subplot(5, 4, 19)
+    plt.subplot(5, 4, 19, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_L_net, rho_S_net, phi_2_net=phi_S_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     plt.xlabel(r'$y$ (m)', fontsize = 15)
@@ -231,7 +231,7 @@ def vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net):
     plt.plot([pos1[1]], [pos1[2]], marker='*', markersize=20, color="black")
     plt.plot([pos2[1]], [pos2[2]], marker='*', markersize=10, color="black")
 
-    plt.subplot(5, 4, 20)
+    plt.subplot(5, 4, 20, rasterized=rasterized)
     y, z, fa_heatmap = heatmap(phi_S_net, rho_S_net, phi_2_net=phi_L_net, pos1=pos1, vel1=vel1, pos2=pos2, vel2=vel2)
     plt.ylabel(r'$z$ (m)', fontsize = 15)
     plt.xlabel(r'$y$ (m)', fontsize = 15)
