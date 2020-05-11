@@ -8,9 +8,21 @@ import torch.nn as nn
 from random import shuffle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import os
+
+# output will be written to ../data/models/<output_name> folder
+output_name = "test"
+lip = 3
+num_epochs = 5
+
+# This might throw an exception as a safety measure to avoid
+# that previously learned files are overwritten
+os.makedirs('../data/models/{}'.format(output_name))
+
+
 torch.set_default_tensor_type('torch.DoubleTensor')
 torch.multiprocessing.set_sharing_strategy('file_system')
-pp = PdfPages('output.pdf')
+pp = PdfPages('../data/models/{}/output.pdf'.format(output_name))
 
 ##### Part I: Data generation and interpolation #####
 print('***** Data generation and interpolation! *****')
@@ -41,7 +53,7 @@ Data_SSS_S3_list = []
 # 63.73s 63.82s
 TF = np.array([63.73, 63.82])
 S = ['00', '01']
-name = '../../datacollection19_12_11_2019_2/random_walk_large_large/'
+name = '../data/training/datacollection19_12_11_2019/random_walk_large_large/'
 for i in range(len(TF)):
     Data_LL_L1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_LL_L2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf102_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -52,7 +64,7 @@ for i in range(len(TF)):
 # 63.74s 63.44s
 TF = np.array([63.74, 63.44])
 S = ['02', '03']
-name = '../../datacollection19_12_11_2019_2/random_walk_large_small/'
+name = '../data/training/datacollection19_12_11_2019/random_walk_large_small/'
 for i in range(len(TF)):
     Data_LS_L_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf102_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_LS_S_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -63,7 +75,7 @@ for i in range(len(TF)):
 # 63.62s 63.83s
 TF = np.array([63.62, 63.83])
 S = ['04', '05']
-name = '../../datacollection19_12_11_2019_2/random_walk_small_small/'
+name = '../data/training/datacollection19_12_11_2019/random_walk_small_small/'
 for i in range(len(TF)):
     Data_SS_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SS_S2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf51_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -74,7 +86,7 @@ for i in range(len(TF)):
 # 59.77s 
 TF = np.array([59.77])
 S = ['02']
-name = '../../datacollection19_12_11_2019_2/swap_large_large/'
+name = '../data/training/datacollection19_12_11_2019/swap_large_large/'
 for i in range(len(TF)):
     Data_LL_L1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_LL_L2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf102_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -85,7 +97,7 @@ for i in range(len(TF)):
 # 59.92s
 TF = np.array([59.92])
 S = ['02']
-name = '../../datacollection19_12_11_2019_2/swap_small_small/'
+name = '../data/training/datacollection19_12_11_2019/swap_small_small/'
 for i in range(len(TF)):
     Data_SS_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SS_S2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf51_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -96,7 +108,7 @@ for i in range(len(TF)):
 # 59.79s 59.80s
 TF = np.array([59.79, 59.80])
 S = ['00', '01']
-name = '../../datacollection19_12_11_2019_2/swap_large_small/'
+name = '../data/training/datacollection19_12_11_2019/swap_large_small/'
 for i in range(len(TF)):
     Data_LS_L_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf102_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_LS_S_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -108,7 +120,7 @@ for i in range(len(TF)):
 # 63.62s 62.89s
 TF = np.array([63.62, 62.89])
 S = ['01', '02']
-name = '../../datacollection20_12_20_2019/random_walk_large_ground/'
+name = '../data/training/datacollection20_12_20_2019/random_walk_large_ground/'
 for i in range(len(TF)):
     Data_LGe_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
 
@@ -118,7 +130,7 @@ for i in range(len(TF)):
 # 63.71s 63.62s
 TF = np.array([63.71, 63.62])
 S = ['01', '02']
-name = '../../datacollection20_12_20_2019/random_walk_small_ground/'
+name = '../data/training/datacollection20_12_20_2019/random_walk_small_ground/'
 for i in range(len(TF)):
     Data_SGe_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
 
@@ -128,7 +140,7 @@ for i in range(len(TF)):
 # 63.74s 63.84s
 TF = np.array([63.74, 63.84])
 S = ['09', '10']
-name = '../../datacollection20_12_20_2019/random_walk_sll/'
+name = '../data/training/datacollection20_12_20_2019/random_walk_sll/'
 for i in range(len(TF)):
     Data_SLL_S_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SLL_L1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -140,7 +152,7 @@ for i in range(len(TF)):
 # 15.98s
 TF = np.array([15.98])
 S = ['06']
-name = '../../datacollection20_12_20_2019/swap_lsl/'
+name = '../data/training/datacollection20_12_20_2019/swap_lsl/'
 for i in range(len(TF)):
     Data_SLL_S_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SLL_L1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -152,7 +164,7 @@ for i in range(len(TF)):
 # 63.83s 63.83s
 TF = np.array([63.83, 63.83])
 S = ['04', '13']
-name = '../../datacollection20_12_20_2019/random_walk_ssl/'
+name = '../data/training/datacollection20_12_20_2019/random_walk_ssl/'
 for i in range(len(TF)):
     Data_SSL_L_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SSL_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -164,7 +176,7 @@ for i in range(len(TF)):
 # 16.01s
 TF = np.array([16.01])
 S = ['03']
-name = '../../datacollection20_12_20_2019/swap_sls/'
+name = '../data/training/datacollection20_12_20_2019/swap_sls/'
 for i in range(len(TF)):
     Data_SSL_L_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf101_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SSL_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -176,7 +188,7 @@ for i in range(len(TF)):
 # 63.83s 63.76s
 TF = np.array([63.83, 63.76])
 S = ['00', '01']
-name = '../../datacollection20_12_20_2019/random_walk_sss/'
+name = '../data/training/datacollection20_12_20_2019/random_walk_sss/'
 for i in range(len(TF)):
     Data_SSS_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SSS_S2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf51_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -188,7 +200,7 @@ for i in range(len(TF)):
 # 17.98s
 TF = np.array([17.98])
 S = ['00']
-name = '../../datacollection20_12_20_2019/swap_sss/'
+name = '../data/training/datacollection20_12_20_2019/swap_sss/'
 for i in range(len(TF)):
     Data_SSS_S1_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf50_'+S[i]+'.csv'), ss=0, ee=-1))
     Data_SSS_S2_list.append(interpolation_cubic(0, TF[i], data_extraction(name+'cf51_'+S[i]+'.csv'), ss=0, ee=-1))
@@ -432,7 +444,7 @@ for i, data in enumerate(trainloader_SS2S, 0):
     mixed.append(data)
 
 # Spectral normalization
-def Lip(net, lip=3):
+def Lip(net, lip):
     for param in net.parameters():
         M = param.detach().numpy()
         if M.ndim > 1:
@@ -440,7 +452,7 @@ def Lip(net, lip=3):
             if s > lip:
                 param.data = param / s * lip
 
-for epoch in range(200):  # loop over the dataset multiple times
+for epoch in range(num_epochs):  # loop over the dataset multiple times
     running_loss = 0.0
     count = np.copy(Count)
     shuffle(mixed)
@@ -506,11 +518,11 @@ for epoch in range(200):  # loop over the dataset multiple times
         optimizer_rho_S.step()
         
         # Lip
-        Lip(phi_G_net)
-        Lip(phi_L_net)
-        Lip(phi_S_net)
-        Lip(rho_L_net)
-        Lip(rho_S_net)
+        Lip(phi_G_net, lip)
+        Lip(phi_L_net, lip)
+        Lip(phi_S_net, lip)
+        Lip(rho_L_net, lip)
+        Lip(rho_S_net, lip)
                     
         running_loss += loss.item()
 
@@ -543,21 +555,21 @@ print('SL2S loss after training', set_loss(trainset_SL2S, criterion, rho_S_net, 
 print('SS2S loss after training', set_loss(trainset_SS2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_S_net))
 
 if True:
-    torch.save(phi_G_net.state_dict(), './models_19and20/phi_G.pth')
-    torch.save(rho_L_net.state_dict(), './models_19and20/rho_L.pth')
-    torch.save(phi_L_net.state_dict(), './models_19and20/phi_L.pth')
-    torch.save(rho_S_net.state_dict(), './models_19and20/rho_S.pth')
-    torch.save(phi_S_net.state_dict(), './models_19and20/phi_S.pth')
+    torch.save(phi_G_net.state_dict(), '../data/models/{}/phi_G.pth'.format(output_name))
+    torch.save(rho_L_net.state_dict(), '../data/models/{}/rho_L.pth'.format(output_name))
+    torch.save(phi_L_net.state_dict(), '../data/models/{}/phi_L.pth'.format(output_name))
+    torch.save(rho_S_net.state_dict(), '../data/models/{}/rho_S.pth'.format(output_name))
+    torch.save(phi_S_net.state_dict(), '../data/models/{}/phi_S.pth'.format(output_name))
     print('Models saved!')
 
 
 ##### Part VI: Visualization and validation #####
 print('***** Visualization and validation! *****')
-phi_G_net.load_state_dict(torch.load('./models_19and20/phi_G.pth'))
-rho_L_net.load_state_dict(torch.load('./models_19and20/rho_L.pth'))
-rho_S_net.load_state_dict(torch.load('./models_19and20/rho_S.pth'))
-phi_L_net.load_state_dict(torch.load('./models_19and20/phi_L.pth'))
-phi_S_net.load_state_dict(torch.load('./models_19and20/phi_S.pth'))
+phi_G_net.load_state_dict(torch.load('../data/models/{}/phi_G.pth'.format(output_name)))
+rho_L_net.load_state_dict(torch.load('../data/models/{}/rho_L.pth'.format(output_name)))
+rho_S_net.load_state_dict(torch.load('../data/models/{}/rho_S.pth'.format(output_name)))
+phi_L_net.load_state_dict(torch.load('../data/models/{}/phi_L.pth'.format(output_name)))
+phi_S_net.load_state_dict(torch.load('../data/models/{}/phi_S.pth'.format(output_name)))
 vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net)
 
 # Val of NNs
