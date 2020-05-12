@@ -4,7 +4,10 @@ import torch
 import hnswlib
 
 def state_to_index(x):
-  velIdx = x.shape[0] // 2
+  if x.ndim == 1:
+    velIdx = x.shape[0] // 2
+  else:
+    velIdx = x.shape[1] // 2
   if velIdx == 2:
     return x * np.array([1,1,0.05,0.05])
   else:

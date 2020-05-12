@@ -342,16 +342,17 @@ def tracking(robots, dt, feedforward=True):
 def sequential_planning(useNN, file_name="output.pdf", use3D=False):
   dt = 0.05
   robots = []
+  model_folder = '../data/models/models_19and20/epoch5_lip3_5'
 
   if use3D:
     # CF0
-    robot = RobotCrazyFlie3D(useNN=useNN, cftype="small")
+    robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype="small")
     robot.x0 = torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32)
     robots.append(robot)
 
     # CF1
-    robot = RobotCrazyFlie3D(useNN=useNN, cftype="large")
+    robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype="large")
     robot.x0 = torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32)
     robots.append(robot)
@@ -360,13 +361,13 @@ def sequential_planning(useNN, file_name="output.pdf", use3D=False):
     # 2D version
 
     # CF0
-    robot = RobotCrazyFlie2D(useNN=useNN, cftype="small")
+    robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype="small")
     robot.x0 = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([0.5,0,0,0], dtype=torch.float32)
     robots.append(robot)
 
     # CF1
-    robot = RobotCrazyFlie2D(useNN=useNN, cftype="large")
+    robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype="large")
     robot.x0 = torch.tensor([0.5,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
     robots.append(robot)
