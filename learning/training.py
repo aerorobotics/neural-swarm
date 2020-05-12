@@ -13,17 +13,22 @@ from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
 output_name = "test"
-lip = 3
+lip = 3.5
 num_epochs = 5
 batch_size = 64
 rasterized = True # set to True, to rasterize the pictures in the PDF
+
+# 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
+# 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
+encoder = {'Ge2L':0, 'Ge2S':1, 'L2L':2, 'S2S':3, 'L2S':4, 'S2L':5, \
+           'SS2L':6, 'SL2L':7, 'LL2S':8, 'SL2S':9, 'SS2S':10}
 
 # This might throw an exception as a safety measure to avoid
 # that previously learned files are overwritten
 os.makedirs('../data/models/{}'.format(output_name))
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = 'cpu'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = 'cpu'
 print('Using device:', device)
 
 torch.set_default_tensor_type('torch.DoubleTensor')
@@ -277,66 +282,55 @@ Data_SSS_S3 = Fa(Data_SSS_S3, m, g, C_00, C_10, C_01, C_20, C_11)
 
 ##### Part IV: Generate input-output pair #####
 print('***** Input-output pair generation! *****')
-# Ge2L:0 Ge2S:1 
-data_input_Ge2L, data_output_Ge2L = get_data(D1=Data_LGe, D2=None, s=0)
-data_input_Ge2S, data_output_Ge2S = get_data(D1=Data_SGe, D2=None, s=1)
+data_input_Ge2L, data_output_Ge2L = get_data(D1=Data_LGe, D2=None, s=encoder['Ge2L'])
+data_input_Ge2S, data_output_Ge2S = get_data(D1=Data_SGe, D2=None, s=encoder['Ge2S'])
 print('Ge2L:', data_input_Ge2L.shape, data_output_Ge2L.shape)
 print('Ge2S:', data_input_Ge2S.shape, data_output_Ge2S.shape)
 
-# L2L:2
-data_input_L2L_a, data_output_L2L_a = get_data(D1=Data_LL_L1, D2=Data_LL_L2, s=2)
-data_input_L2L_b, data_output_L2L_b = get_data(D1=Data_LL_L2, D2=Data_LL_L1, s=2)
+data_input_L2L_a, data_output_L2L_a = get_data(D1=Data_LL_L1, D2=Data_LL_L2, s=encoder['L2L'])
+data_input_L2L_b, data_output_L2L_b = get_data(D1=Data_LL_L2, D2=Data_LL_L1, s=encoder['L2L'])
 data_input_L2L = np.vstack((data_input_L2L_a, data_input_L2L_b))
 data_output_L2L = np.vstack((data_output_L2L_a, data_output_L2L_b))
 print('L2L:', data_input_L2L.shape, data_output_L2L.shape)
 
-# S2S:3
-data_input_S2S_a, data_output_S2S_a = get_data(D1=Data_SS_S1, D2=Data_SS_S2, s=3)
-data_input_S2S_b, data_output_S2S_b = get_data(D1=Data_SS_S2, D2=Data_SS_S1, s=3)
+data_input_S2S_a, data_output_S2S_a = get_data(D1=Data_SS_S1, D2=Data_SS_S2, s=encoder['S2S'])
+data_input_S2S_b, data_output_S2S_b = get_data(D1=Data_SS_S2, D2=Data_SS_S1, s=encoder['S2S'])
 data_input_S2S = np.vstack((data_input_S2S_a, data_input_S2S_b))
 data_output_S2S = np.vstack((data_output_S2S_a, data_output_S2S_b))
 print('S2S:', data_input_S2S.shape, data_output_S2S.shape)
 
-# L2S:4 S2L:5
-data_input_L2S, data_output_L2S = get_data(D1=Data_LS_S, D2=Data_LS_L, s=4)
-data_input_S2L, data_output_S2L = get_data(D1=Data_LS_L, D2=Data_LS_S, s=5)
+data_input_L2S, data_output_L2S = get_data(D1=Data_LS_S, D2=Data_LS_L, s=encoder['L2S'])
+data_input_S2L, data_output_S2L = get_data(D1=Data_LS_L, D2=Data_LS_S, s=encoder['S2L'])
 print('L2S:', data_input_L2S.shape, data_output_L2S.shape)
 print('S2L:', data_input_S2L.shape, data_output_S2L.shape)
 
-# SS2L:6
-data_input_SS2L, data_output_SS2L = get_data(D1=Data_SSL_L, D2=Data_SSL_S1, D3=Data_SSL_S2, s=6)
+data_input_SS2L, data_output_SS2L = get_data(D1=Data_SSL_L, D2=Data_SSL_S1, D3=Data_SSL_S2, s=encoder['SS2L'])
 print('SS2L:', data_input_SS2L.shape, data_output_SS2L.shape)
 
-# SL2L:7
-data_input_SL2L_a, data_output_SL2L_a = get_data(D1=Data_SLL_L1, D2=Data_SLL_S, D3=Data_SLL_L2, s=7)
-data_input_SL2L_b, data_output_SL2L_b = get_data(D1=Data_SLL_L2, D2=Data_SLL_S, D3=Data_SLL_L1, s=7)
+data_input_SL2L_a, data_output_SL2L_a = get_data(D1=Data_SLL_L1, D2=Data_SLL_S, D3=Data_SLL_L2, s=encoder['SL2L'])
+data_input_SL2L_b, data_output_SL2L_b = get_data(D1=Data_SLL_L2, D2=Data_SLL_S, D3=Data_SLL_L1, s=encoder['SL2L'])
 data_input_SL2L = np.vstack((data_input_SL2L_a, data_input_SL2L_b))
 data_output_SL2L = np.vstack((data_output_SL2L_a, data_output_SL2L_b))
 print('SL2L:', data_input_SL2L.shape, data_output_SL2L.shape)
 
-# LL2S:8
-data_input_LL2S, data_output_LL2S = get_data(D1=Data_SLL_S, D2=Data_SLL_L1, D3=Data_SLL_L2, s=8)
+data_input_LL2S, data_output_LL2S = get_data(D1=Data_SLL_S, D2=Data_SLL_L1, D3=Data_SLL_L2, s=encoder['LL2S'])
 print('LL2S:', data_input_LL2S.shape, data_output_LL2S.shape)
 
-# SL2S:9
-data_input_SL2S_a, data_output_SL2S_a = get_data(D1=Data_SSL_S1, D2=Data_SSL_S2, D3=Data_SSL_L, s=9)
-data_input_SL2S_b, data_output_SL2S_b = get_data(D1=Data_SSL_S2, D2=Data_SSL_S1, D3=Data_SSL_L, s=9)
+data_input_SL2S_a, data_output_SL2S_a = get_data(D1=Data_SSL_S1, D2=Data_SSL_S2, D3=Data_SSL_L, s=encoder['SL2S'])
+data_input_SL2S_b, data_output_SL2S_b = get_data(D1=Data_SSL_S2, D2=Data_SSL_S1, D3=Data_SSL_L, s=encoder['SL2S'])
 data_input_SL2S = np.vstack((data_input_SL2S_a, data_input_SL2S_b))
 data_output_SL2S = np.vstack((data_output_SL2S_a, data_output_SL2S_b))
 print('SL2S:', data_input_SL2S.shape, data_output_SL2S.shape)
 
-# SS2S:10
-data_input_SS2S_a, data_output_SS2S_a = get_data(D1=Data_SSS_S1, D2=Data_SSS_S2, D3=Data_SSS_S3, s=10)
-data_input_SS2S_b, data_output_SS2S_b = get_data(D1=Data_SSS_S2, D2=Data_SSS_S1, D3=Data_SSS_S3, s=10)
-data_input_SS2S_c, data_output_SS2S_c = get_data(D1=Data_SSS_S3, D2=Data_SSS_S1, D3=Data_SSS_S2, s=10)
+data_input_SS2S_a, data_output_SS2S_a = get_data(D1=Data_SSS_S1, D2=Data_SSS_S2, D3=Data_SSS_S3, s=encoder['SS2S'])
+data_input_SS2S_b, data_output_SS2S_b = get_data(D1=Data_SSS_S2, D2=Data_SSS_S1, D3=Data_SSS_S3, s=encoder['SS2S'])
+data_input_SS2S_c, data_output_SS2S_c = get_data(D1=Data_SSS_S3, D2=Data_SSS_S1, D3=Data_SSS_S2, s=encoder['SS2S'])
 data_input_SS2S = np.vstack((data_input_SS2S_a, data_input_SS2S_b, data_input_SS2S_c))
 data_output_SS2S = np.vstack((data_output_SS2S_a, data_output_SS2S_b, data_output_SS2S_c))
 print('SS2S:', data_input_SS2S.shape, data_output_SS2S.shape)
 
 if True:
     # visualization of data distribution
-    # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
-    # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
     hist(pp, data_input_Ge2L, data_output_Ge2L, 'Ge2L', rasterized)
     hist(pp, data_input_Ge2S, data_output_Ge2S, 'Ge2S', rasterized)
     hist(pp, data_input_L2L, data_output_L2L, 'L2L', rasterized)
@@ -583,27 +577,27 @@ def Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_
             inputs = torch.from_numpy(data_input[[i], :])
             temp = inputs[:, -1].item()
             temp = int(temp)
-            if temp == 0:
+            if temp == encoder['Ge2L']:
                 outputs = rho_L_net(phi_G_net(inputs[:, 2:6]))
-            elif temp == 1:
+            elif temp == encoder['Ge2S']:
                 outputs = rho_S_net(phi_G_net(inputs[:, 2:6]))
-            elif temp == 2:
+            elif temp == encoder['L2L']:
                 outputs = rho_L_net(phi_L_net(inputs[:, :6]))
-            elif temp == 3:
+            elif temp == encoder['S2S']:
                 outputs = rho_S_net(phi_S_net(inputs[:, :6]))
-            elif temp == 4:
+            elif temp == encoder['L2S']:
                 outputs = rho_S_net(phi_L_net(inputs[:, :6]))
-            elif temp == 5:
+            elif temp == encoder['S2L']:
                 outputs = rho_L_net(phi_S_net(inputs[:, :6]))
-            elif temp == 6:
+            elif temp == encoder['SS2L']:
                 outputs = rho_L_net(phi_S_net(inputs[:, :6]) + phi_S_net(inputs[:, 6:12]))
-            elif temp == 7:
+            elif temp == encoder['SL2L']:
                 outputs = rho_L_net(phi_S_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            elif temp == 8:
+            elif temp == encoder['LL2S']:
                 outputs = rho_S_net(phi_L_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            elif temp == 9:
+            elif temp == encoder['SL2S']:
                 outputs = rho_S_net(phi_S_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            elif temp == 10:
+            elif temp == encoder['SS2S']:
                 outputs = rho_S_net(phi_S_net(inputs[:, :6]) + phi_S_net(inputs[:, 6:12]))
             else:
                 print('wrong class', temp)

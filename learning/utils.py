@@ -8,6 +8,11 @@ import math
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+# 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
+# 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
+encoder = {'Ge2L':0, 'Ge2S':1, 'L2L':2, 'S2S':3, 'L2S':4, 'S2L':5, \
+           'SS2L':6, 'SL2L':7, 'LL2S':8, 'SL2S':9, 'SS2S':10}
+
 # Convert quaternion to rotation matrix
 def rotation_matrix(quat):
     rot_mat = np.ones([3,3])
@@ -188,7 +193,7 @@ def get_data(D1, D2, D3=None, s=0):
     L = D1['time'].shape[0]
     data_input = np.zeros([L, 13], dtype=np.float32)
     data_output = np.zeros([L, 3], dtype=np.float32)
-    if s == 0 or s == 1:
+    if s == encoder['Ge2L'] or s == encoder['Ge2S']:
         # ground effect
         data_input[:, :3] = 0 - D1['pos']
         data_input[:, 3:6] = 0 - D1['vel']
