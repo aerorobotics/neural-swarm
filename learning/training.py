@@ -22,6 +22,9 @@ rasterized = True # set to True, to rasterize the pictures in the PDF
 # that previously learned files are overwritten
 os.makedirs('../data/models/{}'.format(output_name))
 
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
+print('Using device:', device)
 
 torch.set_default_tensor_type('torch.DoubleTensor')
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -363,11 +366,11 @@ trainset_SS2S, trainloader_SS2S = set_generate(data_input_SS2S, data_output_SS2S
 ##### Part V: Training #####
 print('***** Training! *****')
 # ground effect doesn't consider x and y
-phi_G_net = phi_Net(inputdim=4,hiddendim=20)
-phi_L_net = phi_Net(inputdim=6,hiddendim=20)
-phi_S_net = phi_Net(inputdim=6,hiddendim=20)
-rho_L_net = rho_Net(hiddendim=20)
-rho_S_net = rho_Net(hiddendim=20)
+phi_G_net = phi_Net(inputdim=4,hiddendim=20).to(device, dtype=torch.float32)
+phi_L_net = phi_Net(inputdim=6,hiddendim=20).to(device, dtype=torch.float32)
+phi_S_net = phi_Net(inputdim=6,hiddendim=20).to(device, dtype=torch.float32)
+rho_L_net = rho_Net(hiddendim=20).to(device, dtype=torch.float32)
+rho_S_net = rho_Net(hiddendim=20).to(device, dtype=torch.float32)
 
 criterion = nn.MSELoss()
 optimizer_phi_G = optim.Adam(phi_G_net.parameters(), lr=1e-3)
@@ -406,7 +409,6 @@ print('SS2S loss b4 training', set_loss(trainset_SS2S, criterion, rho_S_net, phi
 
 # training
 Loss_sn = []
-B = 64 # batch size
 # mix all the data
 mixed = []
 Count = defaultdict(int)
@@ -446,12 +448,14 @@ for data in trainloader_SS2S:
 
 # Spectral normalization
 def Lip(net, lip):
+    net.cpu()
     for param in net.parameters():
         M = param.detach().numpy()
         if M.ndim > 1:
             s = np.linalg.norm(M, 2)
             if s > lip:
                 param.data = param / s * lip
+    net.to(device, dtype=torch.float32)
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
     running_loss = 0.0
@@ -543,6 +547,12 @@ print('SL2L loss after training', set_loss(trainset_SL2L, criterion, rho_L_net, 
 print('LL2S loss after training', set_loss(trainset_LL2S, criterion, rho_S_net, phi_L_net, phi_2_net=phi_L_net))
 print('SL2S loss after training', set_loss(trainset_SL2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_L_net))
 print('SS2S loss after training', set_loss(trainset_SS2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_S_net))
+
+phi_G_net.cpu()
+phi_L_net.cpu()
+phi_S_net.cpu()
+rho_L_net.cpu()
+rho_S_net.cpu()
 
 if True:
     torch.save(phi_G_net.state_dict(), '../data/models/{}/phi_G.pth'.format(output_name))

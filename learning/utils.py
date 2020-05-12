@@ -186,8 +186,8 @@ def get_data(D1, D2, D3=None, s=0):
     typ = 'fa_imu'
     g = 9.81
     L = D1['time'].shape[0]
-    data_input = np.zeros([L, 13])
-    data_output = np.zeros([L, 3])
+    data_input = np.zeros([L, 13], dtype=np.float32)
+    data_output = np.zeros([L, 3], dtype=np.float32)
     if s == 0 or s == 1:
         # ground effect
         data_input[:, :3] = 0 - D1['pos']
@@ -302,14 +302,14 @@ class MyDataset(Dataset):
 
         return sample
 
+
 # Input numpy data_input (7x1) and data_output (3x1)
 # Output trainset and trainloader in torch
-def set_generate(data_input, data_output, type, batch_size):
-    Data_input = torch.from_numpy(data_input[:, :]) # 7x1
-    Data_output = torch.from_numpy(data_output[:, 2:]) # 1x1
+def set_generate(data_input, data_output, type, device, batch_size):
+    Data_input = torch.from_numpy(data_input[:, :]).float().to(device) # 7x1
+    Data_output = torch.from_numpy(data_output[:, 2:]).float().to(device) # 1x1
     trainset = MyDataset(Data_input, Data_output, type)
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
-    return trainset, trainloader
     return trainset, trainloader
 
 # Vis of NNs

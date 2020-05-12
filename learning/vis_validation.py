@@ -16,11 +16,11 @@ def heatmap(phi_1_net, rho_net, phi_2_net=None, pos1=[0,0,0.5], vel1=[0,0,0], po
     z = np.linspace(z_max, z_min, z_length)
     y = np.linspace(y_min, y_max, y_length)
     
-    fa_heatmap = np.zeros([1, z_length, y_length])
+    fa_heatmap = np.zeros([1, z_length, y_length], dtype=np.float32)
     
     for j in range(y_length):
         for i in range(z_length):
-            c = np.zeros([1, 6])
+            c = np.zeros([1, 6], dtype=np.float32)
             c[0, 0] = pos1[0] - 0
             c[0, 1] = pos1[1] - y[j]
             c[0, 2] = pos1[2] - z[i]
@@ -31,7 +31,7 @@ def heatmap(phi_1_net, rho_net, phi_2_net=None, pos1=[0,0,0.5], vel1=[0,0,0], po
             if GE:
             	cc1 = torch.from_numpy(c[:, 2:])
             if pos2 is not None:
-	            c = np.zeros([1, 6])
+	            c = np.zeros([1, 6], dtype=np.float32)
 	            c[0, 0] = pos2[0] - 0
 	            c[0, 1] = pos2[1] - y[j]
 	            c[0, 2] = pos2[2] - z[i]
@@ -43,7 +43,7 @@ def heatmap(phi_1_net, rho_net, phi_2_net=None, pos1=[0,0,0.5], vel1=[0,0,0], po
             	if pos2 is None:
                 	fa_heatmap[0, i, j] = rho_net(phi_1_net(cc1[:, :]))[0, 0].item() # f_a_z
             	else:
-                	fa_heatmap[0, i, j] = rho_net(phi_1_net(cc1[:, :]) + phi_2_net(cc2[:, :]))[0, 0].item() # f_a_z
+                    fa_heatmap[0, i, j] = rho_net(phi_1_net(cc1[:, :]) + phi_2_net(cc2[:, :]))[0, 0].item() # f_a_z
     
     return y, z, fa_heatmap[0, :, :]
 
