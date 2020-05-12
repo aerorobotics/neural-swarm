@@ -40,7 +40,9 @@ def sample_vector(dim,max_norm,num_points=1):
 
 def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, trials=10, cost_limit = 1e6):
 
-  sample_goal_iter = 100
+  sample_goal_iter = 50
+  num_branching = 2
+  top_k = 50
 
   xf = xf.detach().numpy()
 
@@ -50,6 +52,8 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
   actions = np.zeros((iters,robot.ctrlDim))
   timesteps = np.zeros((iters,),dtype=np.int)
   cost = np.zeros((iters,))
+  expand_attempts = np.zeros((iters,),dtype=np.int)
+  expand_successes = np.zeros((iters,),dtype=np.int)
 
   for trial in range(trials):
     print("Run trial {} with cost limit {}".format(trial, cost_limit))
@@ -70,7 +74,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
     # Controlling the recall by setting ef:
     # higher ef leads to better accuracy, but slower search
-    index.set_ef(10)
+    index.set_ef(100)
 
     index.add_items(state_to_index(states[0:1]))
 
@@ -85,87 +89,122 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       # randomly sample a state
       if attempt % sample_goal_iter == 0:
-        x = xf
+        # x = xf
+        idx = best_i
       else:
         x = np.random.uniform(robot.x_min, robot.x_max)
 
-      # find closest state in tree
-      ids, distances = index.knn_query(x, k=1)
-      idx = ids[0,0]
-
-      # randomly sample an action
-      # u = np.random.uniform(robot.u_min, robot.u_max)
-      u = sample_vector(robot.ctrlDim, robot.g * robot.thrust_to_weight)[0]
-      cost[i] = cost[idx] + np.linalg.norm(u)
-      if cost[i] > cost_limit:
-        continue
-
-      timesteps[i] = timesteps[idx] + prop_iter
-
-      # compute neighbors
-      nx_idx = timesteps[idx]
-      nx_idx_next = timesteps[i]
-      data_neighbors_i = []
-      data_neighbors_next = []
-      for cftype_neighbor, x_neighbor in data_neighbors:
-        if x_neighbor.shape[0] > nx_idx:
-          data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
-        else:
-          data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
-        if x_neighbor.shape[0] > nx_idx_next:
-          data_neighbors_next.append((cftype_neighbor, x_neighbor[nx_idx_next,:].detach()))
-        else:
-          data_neighbors_next.append((cftype_neighbor, x_neighbor[-1,:].detach()))
-
-      # forward propagate
-      # NOTE: here, we do not do collision checking (or updating of x_neighbors) between prop_iter for efficiency
-      states_temp[i,0] = states[idx]
-      for k in range(1,prop_iter+1):
-
-        states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
-
-      if not state_valid(robot, states_temp[i,-1], data_neighbors_next):
-        continue
-
-      # update data structures
-      parents[i] = idx
-      states[i] = states_temp[i,-1]
-      actions[i] = u
-
-      index.add_items(state_to_index(states[i:i+1]))
+        # find closest state in tree
+        ids, distances = index.knn_query(x, k=min(top_k,i))
+        # idx = ids[0,0]
+        idx = ids[0,np.random.randint(0, ids.shape[1])]
 
 
-      if attempt % 500 == 0:
+
+      # # perf improvement: do not attempt to expand nodes that seem to be on the border of the statespace
+      # if expand_attempts[idx] > 10 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+      #   idx = np.random.randint(0, i)
+      #   # continue
+
+      expand_attempts[idx] += num_branching
+
+      for branch in range(num_branching):
+
+        # randomly sample an action
+        # u = np.random.uniform(robot.u_min, robot.u_max)
+        u = sample_vector(robot.ctrlDim, robot.g * robot.thrust_to_weight)[0]
+        cost[i] = cost[idx] + np.linalg.norm(u)
+        if cost[i] > cost_limit:
+          continue
+
+        timesteps[i] = timesteps[idx] + prop_iter
+
+        # compute neighbors
+        nx_idx = timesteps[idx]
+        nx_idx_next = timesteps[i]
+        data_neighbors_i = []
+        data_neighbors_next = []
+        for cftype_neighbor, x_neighbor in data_neighbors:
+          if x_neighbor.shape[0] > nx_idx:
+            data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+          else:
+            data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+          if x_neighbor.shape[0] > nx_idx_next:
+            data_neighbors_next.append((cftype_neighbor, x_neighbor[nx_idx_next,:].detach()))
+          else:
+            data_neighbors_next.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+
+        # forward propagate
+        # NOTE: here, we do not do collision checking (or updating of x_neighbors) between prop_iter for efficiency
+        states_temp[i,0] = states[idx]
+        for k in range(1,prop_iter+1):
+
+          states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
+
+        if not state_valid(robot, states_temp[i,-1], data_neighbors_next):
+          continue
+
+        # update data structures
+        parents[i] = idx
+        states[i] = states_temp[i,-1]
+        actions[i] = u
+
+        expand_successes[idx] += 1
+
+        index.add_items(state_to_index(states[i:i+1]))
+
+        # dist = np.linalg.norm(states[i,0:3] - xf[0:3])
+        dist = np.linalg.norm(state_to_index(states[i]) - state_to_index(xf))
+
         # find best solution to goal
-        ids, distances = index.knn_query(xf, k=1)
-        if best_distance > distances[0,0]:
-          best_distance = distances[0,0]
-          best_i = ids[0,0]
-          print("best distance: ", best_distance, best_i)
+        # ids, distances = index.knn_query(xf, k=1)
+        # if best_distance > distances[0,0]:
+          # best_distance = distances[0,0]
+          # best_i = ids[0,0]
+          # print("best distance: ", best_distance, best_i)
+        if best_distance > dist:
+          best_distance = dist
+          best_i = i
+          print("best distance: ", best_distance, best_i, attempt)
 
-        if best_distance < 0.2**2:
-          idx = best_i
-          print("Found solution!", idx, cost[idx])
-          best_cost = cost[idx]
-          cost_limit = 0.9 * cost[idx]
+        i+=1
 
-          # generate solution
-          sol_x = []
-          sol_u = []
-          
-          while idx > 0:
-            for k in reversed(range(1, prop_iter+1)):
-              sol_x.append(states_temp[idx,k])
-              sol_u.append(actions[idx])
-            idx = parents[idx]
-          sol_x.append(states[0])
-          sol_x.reverse()
-          sol_u.reverse()
-          sol_x = torch.tensor(sol_x, dtype=torch.float32)
-          sol_u = torch.tensor(sol_u, dtype=torch.float32)
+      if best_distance < 0.1:
+        idx = best_i
+        print("Found solution!", idx, cost[idx])
+        best_cost = cost[idx]
+        cost_limit = 0.9 * cost[idx]
 
-          break
+        # generate solution
+        sol_x = []
+        sol_u = []
+        
+        while idx > 0:
+          for k in reversed(range(1, prop_iter+1)):
+            sol_x.append(states_temp[idx,k])
+            sol_u.append(actions[idx])
+          idx = parents[idx]
+        sol_x.append(states[0])
+        sol_x.reverse()
+        sol_u.reverse()
+        sol_x = torch.tensor(sol_x, dtype=torch.float32)
+        sol_u = torch.tensor(sol_u, dtype=torch.float32)
 
-      i+=1
+        break
+
+      
+
+  # print(expand_attempts[0:i], expand_successes[0:i])
+
+  # import matplotlib.pyplot as plt
+  # # plt.hist(expand_attempts[0:i])
+  # # plt.hist(expand_successes[0:i])
+  # plt.hist(expand_attempts[0:i] - expand_successes[0:i])
+  # plt.show()
+
+  # idx = np.argmax(expand_attempts[0:i] - expand_successes[0:i])
+  # print(expand_attempts[idx], expand_successes[idx], states[idx])
+
+  # exit()
 
   return sol_x, sol_u, best_cost

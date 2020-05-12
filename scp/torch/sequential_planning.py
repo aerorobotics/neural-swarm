@@ -340,7 +340,7 @@ def tracking(robots, dt, feedforward=True):
   # return X.detach(), U.detach(), Fa.detach()
 
 def sequential_planning(useNN, file_name="output.pdf", use3D=False):
-  dt = 0.025
+  dt = 0.05
   robots = []
 
   if use3D:
@@ -364,16 +364,12 @@ def sequential_planning(useNN, file_name="output.pdf", use3D=False):
     robot.x0 = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([0.5,0,0,0], dtype=torch.float32)
     robots.append(robot)
-    # robot = pickle.load( open( "robot0.p", "rb" ) )
-    # robots.append(robot)
 
     # CF1
     robot = RobotCrazyFlie2D(useNN=useNN, cftype="large")
     robot.x0 = torch.tensor([0.5,0,0,0], dtype=torch.float32)
     robot.xf = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
     robots.append(robot)
-    # robot = pickle.load( open( "robot1.p", "rb" ) )
-    # robots.append(robot)
 
     # # CF2
     # robot = RobotCrazyFlie2D(useNN=useNN)
@@ -404,7 +400,7 @@ def sequential_planning(useNN, file_name="output.pdf", use3D=False):
           data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:idx] + robots[idx+1:] if hasattr(r, 'X_treesearch')]
 
           # run tree search to find initial solution
-          x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=4, iters=15000, top_k=100, trials=1, cost_limit=cost_limits[idx])
+          x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=50000, top_k=100, trials=1, cost_limit=cost_limits[idx])
           if x is not None:
             cost_limits[idx] = 0.9 * best_cost
             robot.X_treesearch = x
