@@ -9,11 +9,13 @@ from random import shuffle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import os
+from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
 output_name = "test"
 lip = 3
 num_epochs = 5
+batch_size = 64
 rasterized = True # set to True, to rasterize the pictures in the PDF
 
 # This might throw an exception as a safety measure to avoid
@@ -345,17 +347,17 @@ if True:
     hist(pp, data_input_SS2S, data_output_SS2S, 'SS2S', rasterized)
 
 # generate torch trainset and trainloader
-trainset_Ge2L, trainloader_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L)
-trainset_Ge2S, trainloader_Ge2S = set_generate(data_input_Ge2S, data_output_Ge2S)
-trainset_L2L, trainloader_L2L = set_generate(data_input_L2L, data_output_L2L)
-trainset_S2S, trainloader_S2S = set_generate(data_input_S2S, data_output_S2S)
-trainset_L2S, trainloader_L2S = set_generate(data_input_L2S, data_output_L2S)
-trainset_S2L, trainloader_S2L = set_generate(data_input_S2L, data_output_S2L)
-trainset_SS2L, trainloader_SS2L = set_generate(data_input_SS2L, data_output_SS2L)
-trainset_SL2L, trainloader_SL2L = set_generate(data_input_SL2L, data_output_SL2L)
-trainset_LL2S, trainloader_LL2S = set_generate(data_input_LL2S, data_output_LL2S)
-trainset_SL2S, trainloader_SL2S = set_generate(data_input_SL2S, data_output_SL2S)
-trainset_SS2S, trainloader_SS2S = set_generate(data_input_SS2S, data_output_SS2S)
+trainset_Ge2L, trainloader_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L, 'Ge2L', device, batch_size)
+trainset_Ge2S, trainloader_Ge2S = set_generate(data_input_Ge2S, data_output_Ge2S, 'Ge2S', device, batch_size)
+trainset_L2L, trainloader_L2L = set_generate(data_input_L2L, data_output_L2L, 'L2L', device, batch_size)
+trainset_S2S, trainloader_S2S = set_generate(data_input_S2S, data_output_S2S, 'S2S', device, batch_size)
+trainset_L2S, trainloader_L2S = set_generate(data_input_L2S, data_output_L2S, 'L2S', device, batch_size)
+trainset_S2L, trainloader_S2L = set_generate(data_input_S2L, data_output_S2L, 'S2L', device, batch_size)
+trainset_SS2L, trainloader_SS2L = set_generate(data_input_SS2L, data_output_SS2L, 'SS2L', device, batch_size)
+trainset_SL2L, trainloader_SL2L = set_generate(data_input_SL2L, data_output_SL2L, 'SL2L', device, batch_size)
+trainset_LL2S, trainloader_LL2S = set_generate(data_input_LL2S, data_output_LL2S, 'LL2S', device, batch_size)
+trainset_SL2S, trainloader_SL2S = set_generate(data_input_SL2S, data_output_SL2S, 'SL2S', device, batch_size)
+trainset_SS2S, trainloader_SS2S = set_generate(data_input_SS2S, data_output_SS2S, 'SS2S', device, batch_size)
 
 
 ##### Part V: Training #####
@@ -407,41 +409,39 @@ Loss_sn = []
 B = 64 # batch size
 # mix all the data
 mixed = []
-# 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
-# 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
-Count = np.zeros(11)
-for i, data in enumerate(trainloader_Ge2L, 0):
-    Count[0] += 1
+Count = defaultdict(int)
+for data in trainloader_Ge2L:
+    Count['Ge2L'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_Ge2S, 0):
-    Count[1] += 1
+for data in trainloader_Ge2S:
+    Count['Ge2S'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_L2L, 0):
-    Count[2] += 1
+for data in trainloader_L2L:
+    Count['L2L'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_S2S, 0):
-    Count[3] += 1
+for data in trainloader_S2S:
+    Count['S2S'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_L2S, 0):
-    Count[4] += 1
+for data in trainloader_L2S:
+    Count['L2S'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_S2L, 0):
-    Count[5] += 1
+for data in trainloader_S2L:
+    Count['S2L'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_SS2L, 0):
-    Count[6] += 1
+for data in trainloader_SS2L:
+    Count['SS2L'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_SL2L, 0):
-    Count[7] += 1
+for data in trainloader_SL2L:
+    Count['SL2L'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_LL2S, 0):
-    Count[8] += 1
+for data in trainloader_LL2S:
+    Count['LL2S'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_SL2S, 0):
-    Count[9] += 1
+for data in trainloader_SL2S:
+    Count['SL2S'] += 1
     mixed.append(data)
-for i, data in enumerate(trainloader_SS2S, 0):
-    Count[10] += 1
+for data in trainloader_SS2S:
+    Count['SS2S'] += 1
     mixed.append(data)
 
 # Spectral normalization
@@ -455,12 +455,13 @@ def Lip(net, lip):
 
 for epoch in range(num_epochs):  # loop over the dataset multiple times
     running_loss = 0.0
-    count = np.copy(Count)
+    count = Count.copy()
     shuffle(mixed)
     for data in mixed:
         # get the inputs
         inputs = data['input']
         labels = data['output']
+        datatype = data['type'][0]
 
         # zero the parameter gradients
         optimizer_phi_G.zero_grad()
@@ -470,46 +471,34 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
         optimizer_rho_S.zero_grad()
 
         # forward + backward + optimize
-        # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
-        # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
-        temp = torch.mean(inputs[:, -1]).item()
-        temp = int(temp)
-        if temp == 0:
+        if datatype == 'Ge2L':
             outputs = rho_L_net(phi_G_net(inputs[:, 2:6]))
-            count[0] -= 1   
-        elif temp == 1:
+        elif datatype == 'Ge2S':
             outputs = rho_S_net(phi_G_net(inputs[:, 2:6]))
-            count[1] -= 1        
-        elif temp == 2:
+        elif datatype == 'L2L':
             outputs = rho_L_net(phi_L_net(inputs[:, :6]))
-            count[2] -= 1
-        elif temp == 3:
+        elif datatype == 'S2S':
             outputs = rho_S_net(phi_S_net(inputs[:, :6]))
-            count[3] -= 1
-        elif temp == 4:
+        elif datatype == 'L2S':
             outputs = rho_S_net(phi_L_net(inputs[:, :6]))
-            count[4] -= 1
-        elif temp == 5:
+        elif datatype == 'S2L':
             outputs = rho_L_net(phi_S_net(inputs[:, :6]))
-            count[5] -= 1
-        elif temp == 6:
+        elif datatype == 'SS2L':
             outputs = rho_L_net(phi_S_net(inputs[:, :6]) + phi_S_net(inputs[:, 6:12]))
-            count[6] -= 1
-        elif temp == 7:
+        elif datatype == 'SL2L':
             outputs = rho_L_net(phi_S_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            count[7] -= 1
-        elif temp == 8:
+        elif datatype == 'LL2S':
             outputs = rho_S_net(phi_L_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            count[8] -= 1
-        elif temp == 9:
+        elif datatype == 'SL2S':
             outputs = rho_S_net(phi_S_net(inputs[:, :6]) + phi_L_net(inputs[:, 6:12]))
-            count[9] -= 1
-        elif temp == 10:
+        elif datatype == 'SS2S':
             outputs = rho_S_net(phi_S_net(inputs[:, :6]) + phi_S_net(inputs[:, 6:12]))
-            count[10] -= 1
         else:
-            print('wrong class', temp)
+            print('wrong class', datatype)
         
+
+        count[datatype] -= 1
+
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer_phi_G.step()
@@ -527,7 +516,7 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
                     
         running_loss += loss.item()
 
-    if np.max(np.abs(count)) != 0:
+    if np.max(np.abs(np.array(list(count.values())))) != 0:
         print('something goes wrong!')
         print(count)
         break

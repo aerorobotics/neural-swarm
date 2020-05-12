@@ -287,9 +287,10 @@ def hist(pp, data_input, data_output, name, rasterized):
 # Dataset in torch
 class MyDataset(Dataset):
 
-    def __init__(self, inputs, outputs):
+    def __init__(self, inputs, outputs, type):
         self.inputs = inputs
         self.outputs = outputs
+        self.type = type
 
     def __len__(self):
         return len(self.inputs)
@@ -297,17 +298,18 @@ class MyDataset(Dataset):
     def __getitem__(self, idx):
         Input = self.inputs[idx,]
         output = self.outputs[idx,]
-        sample = {'input': Input, 'output': output}
+        sample = {'input': Input, 'output': output, 'type': self.type}
 
         return sample
 
 # Input numpy data_input (7x1) and data_output (3x1)
 # Output trainset and trainloader in torch
-def set_generate(data_input, data_output):
+def set_generate(data_input, data_output, type, batch_size):
     Data_input = torch.from_numpy(data_input[:, :]) # 7x1
     Data_output = torch.from_numpy(data_output[:, 2:]) # 1x1
-    trainset = MyDataset(Data_input, Data_output)
-    trainloader = DataLoader(trainset, batch_size=64, shuffle=True, num_workers=2)
+    trainset = MyDataset(Data_input, Data_output, type)
+    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
+    return trainset, trainloader
     return trainset, trainloader
 
 # Vis of NNs
