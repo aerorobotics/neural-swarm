@@ -33,17 +33,19 @@ class RobotCrazyFlie2D:
     else:
       raise Exception("Unknown cftype!")
 
-    self.H = 20 # dimension of the hidden state (output of \phi nets)
-    self.rho_L_net = rho_Net(H=self.H)
-    self.phi_L_net = phi_Net(H=self.H)
+    self.H = 20
+    self.rho_L_net = rho_Net(hiddendim=self.H)
+    self.phi_L_net = phi_Net(inputdim=6,hiddendim=self.H) #x,y,z,vx,vy,vz
     self.rho_L_net.load_state_dict(torch.load('{}/rho_L.pth'.format(model_folder)))
     self.phi_L_net.load_state_dict(torch.load('{}/phi_L.pth'.format(model_folder)))
-    self.rho_S_net = rho_Net(H=self.H)
-    self.phi_S_net = phi_Net(H=self.H)
+    self.rho_S_net = rho_Net(hiddendim=self.H)
+    self.phi_S_net = phi_Net(inputdim=6,hiddendim=self.H) #x,y,z,vx,vy,vz
     self.rho_S_net.load_state_dict(torch.load('{}/rho_S.pth'.format(model_folder)))
     self.phi_S_net.load_state_dict(torch.load('{}/phi_S.pth'.format(model_folder)))
+    self.phi_G_net = phi_Net(inputdim=4,hiddendim=self.H) #z,vx,vy,vz
+    self.phi_G_net.load_state_dict(torch.load('{}/phi_G.pth'.format(model_folder)))
     self.useNN = useNN
-    self.dim_deepset = 3 # whether or not we consider velocity as the deepset's input
+    self.dim_deepset = 6 # whether or not we consider velocity as the deepset's input
 
     # controller
     self.kp = 4.0 # 1.0
@@ -70,6 +72,13 @@ class RobotCrazyFlie2D:
           rho_input += self.phi_L_net(x_12)
         else:
           raise Exception("Unknown cftype!")
+
+      # interaction with the ground
+      x_12 = torch.zeros(4)
+      x_12[0] = self.x_min[1] - x[1]
+      if self.dim_deepset == 6:
+        x_12[2:4] = -x[2:4]
+      rho_input += self.phi_G_net(x_12)
 
       if self.cftype == "small" or self.cftype == "small_powerful_motors":
         faz = self.rho_S_net(rho_input)
@@ -136,15 +145,17 @@ class RobotCrazyFlie3D:
     else:
       raise Exception("Unknown cftype!")
 
-    self.H = 20 # dimension of the hidden state (output of \phi nets)
-    self.rho_L_net = rho_Net(H=self.H)
-    self.phi_L_net = phi_Net(H=self.H)
+    self.H = 20
+    self.rho_L_net = rho_Net(hiddendim=self.H)
+    self.phi_L_net = phi_Net(inputdim=6,hiddendim=self.H) #x,y,z,vx,vy,vz
     self.rho_L_net.load_state_dict(torch.load('{}/rho_L.pth'.format(model_folder)))
     self.phi_L_net.load_state_dict(torch.load('{}/phi_L.pth'.format(model_folder)))
-    self.rho_S_net = rho_Net(H=self.H)
-    self.phi_S_net = phi_Net(H=self.H)
+    self.rho_S_net = rho_Net(hiddendim=self.H)
+    self.phi_S_net = phi_Net(inputdim=6,hiddendim=self.H) #x,y,z,vx,vy,vz
     self.rho_S_net.load_state_dict(torch.load('{}/rho_S.pth'.format(model_folder)))
     self.phi_S_net.load_state_dict(torch.load('{}/phi_S.pth'.format(model_folder)))
+    self.phi_G_net = phi_Net(inputdim=4,hiddendim=self.H) #z,vx,vy,vz
+    self.phi_G_net.load_state_dict(torch.load('{}/phi_G.pth'.format(model_folder)))
     self.useNN = useNN
 
     # controller
@@ -171,6 +182,12 @@ class RobotCrazyFlie3D:
             rho_input += self.phi_L_net(x_12)
           else:
             raise Exception("Unknown cftype!")
+
+      # interaction with the ground
+      x_12 = torch.zeros(4)
+      x_12[0] = self.x_min[2] - x[2]
+      x_12[1:4] = -x[3:6]
+      rho_input += self.phi_G_net(x_12)
 
       if self.cftype == "small" or self.cftype == "small_powerful_motors":
         faz = self.rho_S_net(rho_input)
