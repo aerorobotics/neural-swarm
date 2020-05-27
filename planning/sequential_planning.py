@@ -457,7 +457,7 @@ def sequential_planning(useNN, file_name="output.pdf", use3D=False):
       robot.obj_values_des.append(obj_value)
       print("... finished with obj value {}".format(obj_value))
 
-  # pickle.dump( robots, open( "robots.p", "wb" ) )
+  pickle.dump( robots, open( "robots.p", "wb" ) )
 
   # robots = pickle.load( open( "robots.p", "rb" ) )
 
@@ -470,6 +470,14 @@ def sequential_planning(useNN, file_name="output.pdf", use3D=False):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("--use3D", action='store_true', help="use 3d version")
+  parser.add_argument("--vis", help="visualize a *.p file")
   args = parser.parse_args()
 
-  sequential_planning(useNN=True, file_name="output.pdf", use3D=args.use3D)
+  if args.vis:
+    dt = 0.05
+    robots = pickle.load(open(args.vis, "rb"))
+    tracking(robots, dt)
+    stats = compute_stats(robots, dt)
+    vis_pdf(robots, stats, "output.pdf", use3D=args.use3D)
+  else:
+    sequential_planning(useNN=True, file_name="output.pdf", use3D=args.use3D)
