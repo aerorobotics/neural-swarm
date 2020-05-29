@@ -41,11 +41,9 @@ def sample_vector(dim,max_norm,num_points=1):
     p = np.multiply(x,frtiled)
     return p
 
-def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, trials=10, cost_limit = 1e6):
+def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, top_k=100, num_branching=2, trials=10, cost_limit = 1e6):
 
   sample_goal_iter = 50
-  num_branching = 2
-  top_k = 50
 
   xf = xf.detach().numpy()
 
@@ -84,7 +82,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
     sol_x = None
     sol_u = None
 
-    while attempt < iters:
+    while attempt < iters/num_branching:
       attempt += 1
 
       # if attempt % 1000 == 0:
@@ -104,10 +102,10 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
 
 
-      # # perf improvement: do not attempt to expand nodes that seem to be on the border of the statespace
-      # if expand_attempts[idx] > 10 and expand_successes[idx] / expand_attempts[idx] < 0.1:
-      #   idx = np.random.randint(0, i)
-      #   # continue
+      # perf improvement: do not attempt to expand nodes that seem to be on the border of the statespace
+      if expand_attempts[idx] > 10 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+        # idx = np.random.randint(0, i)
+        continue
 
       expand_attempts[idx] += num_branching
 
@@ -116,35 +114,46 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
         # randomly sample an action
         # u = np.random.uniform(robot.u_min, robot.u_max)
         u = sample_vector(robot.ctrlDim, robot.g * robot.thrust_to_weight)[0]
+        # print(i,idx)
         cost[i] = cost[idx] + np.linalg.norm(u)
         if cost[i] > cost_limit:
           continue
 
         timesteps[i] = timesteps[idx] + prop_iter
 
-        # compute neighbors
+        # forward propagate
+        states_temp[i,0] = states[idx]
+        all_states_valid = True
+
+        # compute neighbors for first timestep
         nx_idx = timesteps[idx]
-        nx_idx_next = timesteps[i]
         data_neighbors_i = []
-        data_neighbors_next = []
         for cftype_neighbor, x_neighbor in data_neighbors:
           if x_neighbor.shape[0] > nx_idx:
             data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
           else:
             data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
-          if x_neighbor.shape[0] > nx_idx_next:
-            data_neighbors_next.append((cftype_neighbor, x_neighbor[nx_idx_next,:].detach()))
-          else:
-            data_neighbors_next.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
-        # forward propagate
-        # NOTE: here, we do not do collision checking (or updating of x_neighbors) between prop_iter for efficiency
-        states_temp[i,0] = states[idx]
         for k in range(1,prop_iter+1):
 
+          # propagate
           states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
 
-        if not state_valid(robot, states_temp[i,-1], data_neighbors_next):
+          # compute neighbors for this timestep
+          nx_idx = timesteps[idx] + k
+          data_neighbors_i = []
+          for cftype_neighbor, x_neighbor in data_neighbors:
+            if x_neighbor.shape[0] > nx_idx:
+              data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+            else:
+              data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+
+          # validity check
+          if not state_valid(robot, states_temp[i,k], data_neighbors_i):
+            all_states_valid = False
+            break
+
+        if not all_states_valid:
           continue
 
         # update data structures
@@ -168,7 +177,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
         if best_distance > dist:
           best_distance = dist
           best_i = i
-          print("best distance: ", best_distance, best_i, attempt)
+          # print("best distance: ", best_distance, best_i, attempt)
 
         i+=1
 

@@ -9,6 +9,8 @@ import pickle
 import subprocess
 import random
 import argparse
+import os
+import sys
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -173,18 +175,24 @@ def compute_stats(robots, dt):
   # compute position tracking error and control effort statistics
   tracking_errors = [0]
   control_efforts = [0]
+  stats['tracking_errors_avg'] = 0
+  stats['control_efforts_avg'] = 0
   for k, robot in enumerate(robots):
     velIdx = robot.X_rollout.shape[1] // 2
     tracking_error = np.sum(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:velIdx] - robot.X_des[:,0:velIdx], axis=1))
     tracking_errors.append(tracking_error)
     tracking_errors[0] += tracking_error
+    stats['tracking_errors_avg'] += np.mean(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:velIdx] - robot.X_des[:,0:velIdx], axis=1))
 
     control_effort = np.sum(np.linalg.norm(robot.U_rollout, axis=1)) * dt
     control_efforts.append(control_effort)
     control_efforts[0] += control_effort
+    stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout, axis=1))
 
   stats['tracking_errors'] = tracking_errors
   stats['control_efforts'] = control_efforts
+  stats['tracking_errors_avg'] /= len(robots)
+  stats['control_efforts_avg'] /= len(robots)
 
   return stats
 
@@ -282,10 +290,7 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
   pp.savefig(fig)
   plt.close()
 
-
   pp.close()
-  subprocess.call(["xdg-open", name])
-
 
 
 def tracking(robots, dt, feedforward=True):
@@ -339,125 +344,125 @@ def tracking(robots, dt, feedforward=True):
   # print("energy: ", energy, " tracking error: ", tracking_error)
   # return X.detach(), U.detach(), Fa.detach()
 
-def sequential_planning(useNN, file_name="output.pdf", use3D=False):
+def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, seed=None):
+
+  if seed is None:
+    seed = int.from_bytes(os.urandom(4), sys.byteorder)
+  random.seed(seed)
+  np.random.seed(seed)
+  torch.manual_seed(seed)
+  print("seed: ", seed, " file: ", file_name)
+
   dt = 0.05
-  robots = []
+
   model_folder = '../data/models/models_19and20/epoch5_lip3_5'
-
-  if use3D:
-    # CF0
-    robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype="small")
-    robot.x0 = torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32)
-    robot.xf = torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32)
+  robots = []
+  for ri in robot_info:
+    if use3D:
+      robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype=ri['type'])
+    else:
+      robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype=ri['type'])
+    robot.x0 = ri['x0']
+    robot.xf = ri['xf']
     robots.append(robot)
 
-    # CF1
-    robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype="large")
-    robot.x0 = torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32)
-    robot.xf = torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32)
-    robots.append(robot)
+  while True:
 
-  else:
-    # 2D version
+    # tree search to find initial solution
+    permutation = list(range(len(robots)))
 
-    # CF0
-    robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype="small")
-    robot.x0 = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
-    robot.xf = torch.tensor([0.5,0,0,0], dtype=torch.float32)
-    robots.append(robot)
+    if True:
 
-    # CF1
-    robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype="large")
-    robot.x0 = torch.tensor([0.5,0,0,0], dtype=torch.float32)
-    robot.xf = torch.tensor([-0.5,0,0,0], dtype=torch.float32)
-    robots.append(robot)
+      cost_limits = np.repeat(1e6, len(robots))
+      while (cost_limits == 1e6).any():
+        cost_limits = np.repeat(1e6, len(robots))
+        successive_failures = np.zeros(len(robots))
+        # for trial in range(100):
+        trial = 0
+        while (successive_failures < 3).any():
+          trial += 1
+          print("Tree search trial {}; successive_failures: {}; cost_limit: {}, s: {}".format(trial, successive_failures, cost_limits, seed))
+          random.shuffle(permutation)
+          for idx in permutation:
+            print("Tree search for robot {}".format(idx))
+            robot = robots[idx]
+            data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:idx] + robots[idx+1:] if hasattr(r, 'X_treesearch')]
 
-    # # CF2
-    # robot = RobotCrazyFlie2D(useNN=useNN)
-    # robot.x0 = torch.tensor([-0.0,0,0,0], dtype=torch.float32)
-    # robot.xf = torch.tensor([1.0,0,0,0], dtype=torch.float32)
-    # robots.append(robot)
+            # run tree search to find initial solution
+            if use3D:
+              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=200000, top_k=10, num_branching=4, trials=1, cost_limit=cost_limits[idx])
+            else:
+              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=25000, top_k=10, num_branching=2, trials=1, cost_limit=cost_limits[idx])
+            if x is not None:
+              cost_limits[idx] = 0.9 * best_cost
+              successive_failures[idx] = 0
+              robot.X_treesearch = x
+              robot.U_treesearch = u
+              # setup for later iterative refinement
+              robot.X_scpminxf = x
+              robot.U_scpminxf = u
+              robot.obj_values_scpminxf = []
+            else:
+              successive_failures[idx] += 1
 
-    # # CF3
-    # robot = RobotCrazyFlie2D(useNN=useNN)
-    # robot.x0 = torch.tensor([1.0,0,0,0], dtype=torch.float32)
-    # robot.xf = torch.tensor([0.0,0,0,0], dtype=torch.float32)
-    # robots.append(robot)
+      # pickle.dump( robots, open( "robots.p", "wb" ) )
+    else:
+      robots = pickle.load( open( "robots.p", "rb" ) )
 
-
-  # tree search to find initial solution
-  permutation = list(range(len(robots)))
-
-  if True:
-    cost_limits = np.repeat(1e6, len(robots))
-
-    while (cost_limits == 1e6).any():
-      for trial in range(5):
-        print("Tree search trial {}".format(trial))
-        random.shuffle(permutation)
-        for idx in permutation:
-          print("Tree search for robot {}".format(idx))
-          robot = robots[idx]
-          data_neighbors = [(r.cftype, r.X_treesearch) for r in robots[0:idx] + robots[idx+1:] if hasattr(r, 'X_treesearch')]
-
-          # run tree search to find initial solution
-          x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=50000, top_k=100, trials=1, cost_limit=cost_limits[idx])
-          if x is not None:
-            cost_limits[idx] = 0.9 * best_cost
-            robot.X_treesearch = x
-            robot.U_treesearch = u
-            # setup for later iterative refinement
-            robot.X_scpminxf = x
-            robot.U_scpminxf = u
-            robot.obj_values_scpminxf = []
-
-    pickle.dump( robots, open( "robots.p", "wb" ) )
-  else:
-    robots = pickle.load( open( "robots.p", "rb" ) )
-
-  # vis_pdf(robots, "output.pdf", use3D=use3D)
-  # exit()
+    # vis_pdf(robots, "output.pdf", use3D=use3D)
+    # exit()
 
 
 
 
-  # run scp (min xf) to exactly go to the goal
-  for iteration in range(100):
-    random.shuffle(permutation)
-    all_robots_done = True
-    for idx in permutation:
-      print("SCP (min xf) for robot {}".format(idx))
-      robot = robots[idx]
-      data_neighbors = [(r.cftype, r.X_scpminxf) for r in robots[0:idx] + robots[idx+1:]]
-      X1, U1, X1_integration, obj_value = scp_min_xf(robot, robot.X_scpminxf, robot.U_scpminxf, robot.xf, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
-      robot.X_scpminxf = X1[-1]
-      robot.U_scpminxf = U1[-1]
-      robot.obj_values_scpminxf.append(obj_value)
-      print("... finished with obj value {}".format(obj_value))
-      # setup for next stage
-      robot.X_des = robot.X_scpminxf
-      robot.U_des = robot.U_scpminxf
-      robot.obj_values_des = []
-      if obj_value > 1e-8:
-        all_robots_done = False
-    if all_robots_done:
+    # run scp (min xf) to exactly go to the goal
+    for iteration in range(100):
+      random.shuffle(permutation)
+      all_robots_done = True
+      for idx in permutation:
+        print("SCP (min xf) for robot {}".format(idx))
+        robot = robots[idx]
+        data_neighbors = [(r.cftype, r.X_scpminxf) for r in robots[0:idx] + robots[idx+1:]]
+        X1, U1, X1_integration, obj_value = scp_min_xf(robot, robot.X_scpminxf, robot.U_scpminxf, robot.xf, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
+        robot.X_scpminxf = X1[-1]
+        robot.U_scpminxf = U1[-1]
+        robot.obj_values_scpminxf.append(obj_value)
+        print("... finished with obj value {}".format(obj_value))
+        # setup for next stage
+        robot.X_des = robot.X_scpminxf
+        robot.U_des = robot.U_scpminxf
+        robot.obj_values_des = []
+        if obj_value > 1e-8:
+          all_robots_done = False
+      if all_robots_done:
+        break
+
+    # run scp to minimize U
+    for iteration in range(20):
+      random.shuffle(permutation)
+      for idx in permutation:
+        print("SCP (min u) for robot {}".format(idx))
+        robot = robots[idx]
+        data_neighbors = [(r.cftype, r.X_des) for r in robots[0:idx] + robots[idx+1:]]
+
+        X2, U2, X2_integration, obj_value = scp(robot, robot.X_des, robot.U_des, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
+        robot.X_des = X2[-1]
+        robot.U_des = U2[-1]
+        robot.obj_values_des.append(obj_value)
+        print("... finished with obj value {}".format(obj_value))
+
+    # try again if optimization failed
+    failure = False
+    for robot in robots:
+      if robot.obj_values_des[-1] == np.inf:
+        failure = True
+        break
+    if failure:
+      continue
+    else:
       break
 
-  # run scp to minimize U
-  for iteration in range(20):
-    random.shuffle(permutation)
-    for idx in permutation:
-      print("SCP (min u) for robot {}".format(idx))
-      robot = robots[idx]
-      data_neighbors = [(r.cftype, r.X_des) for r in robots[0:idx] + robots[idx+1:]]
-
-      X2, U2, X2_integration, obj_value = scp(robot, robot.X_des, robot.U_des, dt, data_neighbors, trust_region=True, trust_x=0.25, trust_u=1, num_iterations=1)
-      robot.X_des = X2[-1]
-      robot.U_des = U2[-1]
-      robot.obj_values_des.append(obj_value)
-      print("... finished with obj value {}".format(obj_value))
-
-  pickle.dump( robots, open( "robots.p", "wb" ) )
+    # pickle.dump( robots, open( "robots.p", "wb" ) )
 
   # robots = pickle.load( open( "robots.p", "rb" ) )
 
@@ -480,4 +485,34 @@ if __name__ == '__main__':
     stats = compute_stats(robots, dt)
     vis_pdf(robots, stats, "output.pdf", use3D=args.use3D)
   else:
-    sequential_planning(useNN=True, file_name="output.pdf", use3D=args.use3D)
+
+    if args.use3D:
+      robot_info = [
+          {
+            'type': 'small',
+            'x0': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+          },
+          {
+            'type': 'large',
+            'x0': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+          },
+        ]
+    else:
+      robot_info = [
+          {
+            'type': 'small',
+            'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+          },
+          {
+            'type': 'large',
+            'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+          },
+        ]
+
+    sequential_planning(True, robot_info, file_name="output.pdf", use3D=args.use3D)
+
+  subprocess.call(["xdg-open", "output.pdf"])
