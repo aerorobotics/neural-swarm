@@ -111,27 +111,33 @@ if __name__ == '__main__':
 
   # compute position tracking error and control effort statistics
   tracking_errors = np.zeros(len(results))
+  max_z_errors = np.zeros(len(results))
   control_efforts = np.zeros(len(results))
   for k, stats in enumerate(results):
     tracking_errors[k] = stats['tracking_errors'][0]
+    max_z_errors[k] = stats['max_z_errors'][0]
     control_efforts[k] = stats['control_efforts'][0]
     # tracking_errors[k] = stats['tracking_errors_avg']
     # control_efforts[k] = stats['control_efforts_avg']
 
-  fig, ax = plt.subplots(2, len(cases), sharey='row', squeeze=False)
+  fig, ax = plt.subplots(3, len(cases), sharey='row', squeeze=False)
   for c, case in enumerate(cases):
     idx = c * 2 * repeats
 
     ax[0,c].set_title(case['name'])
     ax[0,c].boxplot([tracking_errors[idx:idx+repeats], tracking_errors[idx+repeats:idx+2*repeats]], labels=["NN", "no NN"])
 
+    ax[1,c].boxplot([max_z_errors[idx:idx+repeats], max_z_errors[idx+repeats:idx+2*repeats]], labels=["NN", "no NN"])
+
     # ax[1,c].set_title('Control efforts ' + case['name'])
-    ax[1,c].boxplot([control_efforts[idx:idx+repeats], control_efforts[idx+repeats:idx+2*repeats]], labels=["NN", "no NN"])
+    ax[2,c].boxplot([control_efforts[idx:idx+repeats], control_efforts[idx+repeats:idx+2*repeats]], labels=["NN", "no NN"])
 
     ax[0,c].grid(True)
     ax[1,c].grid(True)
+    ax[2,c].grid(True)
 
   ax[0,0].set_ylabel('Tracking error')
-  ax[1,0].set_ylabel('Control effort')
+  ax[1,0].set_ylabel('Max Z Error')
+  ax[2,0].set_ylabel('Control effort')
 
   plt.show()

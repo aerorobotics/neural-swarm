@@ -174,6 +174,7 @@ def compute_stats(robots, dt):
 
   # compute position tracking error and control effort statistics
   tracking_errors = [0]
+  max_z_errors = [0]
   control_efforts = [0]
   stats['tracking_errors_avg'] = 0
   stats['control_efforts_avg'] = 0
@@ -184,12 +185,17 @@ def compute_stats(robots, dt):
     tracking_errors[0] += tracking_error
     stats['tracking_errors_avg'] += np.mean(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:velIdx] - robot.X_des[:,0:velIdx], axis=1))
 
+    max_z_error = torch.max(np.abs(robot.X_rollout[0:robot.X_des.shape[0],velIdx-1] - robot.X_des[:,velIdx-1]))
+    max_z_errors.append(max_z_error)
+    max_z_errors[0] = max(max_z_errors[0], max_z_error)
+
     control_effort = np.sum(np.linalg.norm(robot.U_rollout, axis=1)) * dt
     control_efforts.append(control_effort)
     control_efforts[0] += control_effort
     stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout, axis=1))
 
   stats['tracking_errors'] = tracking_errors
+  stats['max_z_errors'] = max_z_errors
   stats['control_efforts'] = control_efforts
   stats['tracking_errors_avg'] /= len(robots)
   stats['control_efforts_avg'] /= len(robots)
@@ -279,13 +285,17 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
 
   tracking_errors = stats['tracking_errors']
   control_efforts = stats['control_efforts']
+  max_z_errors = stats['max_z_errors']
 
-  fig, ax = plt.subplots(1, 2)
+  fig, ax = plt.subplots(1, 3)
   ax[0].set_title('Tracking errors')
   ax[0].bar(range(len(tracking_errors)), tracking_errors)
 
   ax[1].set_title('Control efforts')
   ax[1].bar(range(len(control_efforts)), control_efforts)
+
+  ax[2].set_title('Max Z Error')
+  ax[2].bar(range(len(max_z_errors)), max_z_errors)
 
   pp.savefig(fig)
   plt.close()
