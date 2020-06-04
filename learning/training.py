@@ -12,11 +12,13 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "test"
-lip = 3.5
-num_epochs = 5
-batch_size = 64
+output_name = "val/epoch100_lip2_h20"
+lip = 2
+num_epochs = 100
+hidden_dim = 20
+batch_size = 128
 rasterized = True # set to True, to rasterize the pictures in the PDF
+fa_type = 'fa_delay' # 'fa_imu', fa_num', 'fa_delay'
 
 # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
 # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
@@ -282,54 +284,54 @@ Data_SSS_S3 = Fa(Data_SSS_S3, m, g, C_00, C_10, C_01, C_20, C_11)
 
 ##### Part IV: Generate input-output pair #####
 print('***** Input-output pair generation! *****')
-data_input_Ge2L, data_output_Ge2L = get_data(D1=Data_LGe, D2=None, s=encoder['Ge2L'])
-data_input_Ge2S, data_output_Ge2S = get_data(D1=Data_SGe, D2=None, s=encoder['Ge2S'])
+data_input_Ge2L, data_output_Ge2L = get_data(D1=Data_LGe, D2=None, s=encoder['Ge2L'], typ=fa_type)
+data_input_Ge2S, data_output_Ge2S = get_data(D1=Data_SGe, D2=None, s=encoder['Ge2S'], typ=fa_type)
 print('Ge2L:', data_input_Ge2L.shape, data_output_Ge2L.shape)
 print('Ge2S:', data_input_Ge2S.shape, data_output_Ge2S.shape)
 
-data_input_L2L_a, data_output_L2L_a = get_data(D1=Data_LL_L1, D2=Data_LL_L2, s=encoder['L2L'])
-data_input_L2L_b, data_output_L2L_b = get_data(D1=Data_LL_L2, D2=Data_LL_L1, s=encoder['L2L'])
+data_input_L2L_a, data_output_L2L_a = get_data(D1=Data_LL_L1, D2=Data_LL_L2, s=encoder['L2L'], typ=fa_type)
+data_input_L2L_b, data_output_L2L_b = get_data(D1=Data_LL_L2, D2=Data_LL_L1, s=encoder['L2L'], typ=fa_type)
 data_input_L2L = np.vstack((data_input_L2L_a, data_input_L2L_b))
 data_output_L2L = np.vstack((data_output_L2L_a, data_output_L2L_b))
 print('L2L:', data_input_L2L.shape, data_output_L2L.shape)
 
-data_input_S2S_a, data_output_S2S_a = get_data(D1=Data_SS_S1, D2=Data_SS_S2, s=encoder['S2S'])
-data_input_S2S_b, data_output_S2S_b = get_data(D1=Data_SS_S2, D2=Data_SS_S1, s=encoder['S2S'])
+data_input_S2S_a, data_output_S2S_a = get_data(D1=Data_SS_S1, D2=Data_SS_S2, s=encoder['S2S'], typ=fa_type)
+data_input_S2S_b, data_output_S2S_b = get_data(D1=Data_SS_S2, D2=Data_SS_S1, s=encoder['S2S'], typ=fa_type)
 data_input_S2S = np.vstack((data_input_S2S_a, data_input_S2S_b))
 data_output_S2S = np.vstack((data_output_S2S_a, data_output_S2S_b))
 print('S2S:', data_input_S2S.shape, data_output_S2S.shape)
 
-data_input_L2S, data_output_L2S = get_data(D1=Data_LS_S, D2=Data_LS_L, s=encoder['L2S'])
-data_input_S2L, data_output_S2L = get_data(D1=Data_LS_L, D2=Data_LS_S, s=encoder['S2L'])
+data_input_L2S, data_output_L2S = get_data(D1=Data_LS_S, D2=Data_LS_L, s=encoder['L2S'], typ=fa_type)
+data_input_S2L, data_output_S2L = get_data(D1=Data_LS_L, D2=Data_LS_S, s=encoder['S2L'], typ=fa_type)
 print('L2S:', data_input_L2S.shape, data_output_L2S.shape)
 print('S2L:', data_input_S2L.shape, data_output_S2L.shape)
 
-data_input_SS2L, data_output_SS2L = get_data(D1=Data_SSL_L, D2=Data_SSL_S1, D3=Data_SSL_S2, s=encoder['SS2L'])
+data_input_SS2L, data_output_SS2L = get_data(D1=Data_SSL_L, D2=Data_SSL_S1, D3=Data_SSL_S2, s=encoder['SS2L'], typ=fa_type)
 print('SS2L:', data_input_SS2L.shape, data_output_SS2L.shape)
 
-data_input_SL2L_a, data_output_SL2L_a = get_data(D1=Data_SLL_L1, D2=Data_SLL_S, D3=Data_SLL_L2, s=encoder['SL2L'])
-data_input_SL2L_b, data_output_SL2L_b = get_data(D1=Data_SLL_L2, D2=Data_SLL_S, D3=Data_SLL_L1, s=encoder['SL2L'])
+data_input_SL2L_a, data_output_SL2L_a = get_data(D1=Data_SLL_L1, D2=Data_SLL_S, D3=Data_SLL_L2, s=encoder['SL2L'], typ=fa_type)
+data_input_SL2L_b, data_output_SL2L_b = get_data(D1=Data_SLL_L2, D2=Data_SLL_S, D3=Data_SLL_L1, s=encoder['SL2L'], typ=fa_type)
 data_input_SL2L = np.vstack((data_input_SL2L_a, data_input_SL2L_b))
 data_output_SL2L = np.vstack((data_output_SL2L_a, data_output_SL2L_b))
 print('SL2L:', data_input_SL2L.shape, data_output_SL2L.shape)
 
-data_input_LL2S, data_output_LL2S = get_data(D1=Data_SLL_S, D2=Data_SLL_L1, D3=Data_SLL_L2, s=encoder['LL2S'])
+data_input_LL2S, data_output_LL2S = get_data(D1=Data_SLL_S, D2=Data_SLL_L1, D3=Data_SLL_L2, s=encoder['LL2S'], typ=fa_type)
 print('LL2S:', data_input_LL2S.shape, data_output_LL2S.shape)
 
-data_input_SL2S_a, data_output_SL2S_a = get_data(D1=Data_SSL_S1, D2=Data_SSL_S2, D3=Data_SSL_L, s=encoder['SL2S'])
-data_input_SL2S_b, data_output_SL2S_b = get_data(D1=Data_SSL_S2, D2=Data_SSL_S1, D3=Data_SSL_L, s=encoder['SL2S'])
+data_input_SL2S_a, data_output_SL2S_a = get_data(D1=Data_SSL_S1, D2=Data_SSL_S2, D3=Data_SSL_L, s=encoder['SL2S'], typ=fa_type)
+data_input_SL2S_b, data_output_SL2S_b = get_data(D1=Data_SSL_S2, D2=Data_SSL_S1, D3=Data_SSL_L, s=encoder['SL2S'], typ=fa_type)
 data_input_SL2S = np.vstack((data_input_SL2S_a, data_input_SL2S_b))
 data_output_SL2S = np.vstack((data_output_SL2S_a, data_output_SL2S_b))
 print('SL2S:', data_input_SL2S.shape, data_output_SL2S.shape)
 
-data_input_SS2S_a, data_output_SS2S_a = get_data(D1=Data_SSS_S1, D2=Data_SSS_S2, D3=Data_SSS_S3, s=encoder['SS2S'])
-data_input_SS2S_b, data_output_SS2S_b = get_data(D1=Data_SSS_S2, D2=Data_SSS_S1, D3=Data_SSS_S3, s=encoder['SS2S'])
-data_input_SS2S_c, data_output_SS2S_c = get_data(D1=Data_SSS_S3, D2=Data_SSS_S1, D3=Data_SSS_S2, s=encoder['SS2S'])
+data_input_SS2S_a, data_output_SS2S_a = get_data(D1=Data_SSS_S1, D2=Data_SSS_S2, D3=Data_SSS_S3, s=encoder['SS2S'], typ=fa_type)
+data_input_SS2S_b, data_output_SS2S_b = get_data(D1=Data_SSS_S2, D2=Data_SSS_S1, D3=Data_SSS_S3, s=encoder['SS2S'], typ=fa_type)
+data_input_SS2S_c, data_output_SS2S_c = get_data(D1=Data_SSS_S3, D2=Data_SSS_S1, D3=Data_SSS_S2, s=encoder['SS2S'], typ=fa_type)
 data_input_SS2S = np.vstack((data_input_SS2S_a, data_input_SS2S_b, data_input_SS2S_c))
 data_output_SS2S = np.vstack((data_output_SS2S_a, data_output_SS2S_b, data_output_SS2S_c))
 print('SS2S:', data_input_SS2S.shape, data_output_SS2S.shape)
 
-if True:
+if False:
     # visualization of data distribution
     hist(pp, data_input_Ge2L, data_output_Ge2L, 'Ge2L', rasterized)
     hist(pp, data_input_Ge2S, data_output_Ge2S, 'Ge2S', rasterized)
@@ -344,27 +346,27 @@ if True:
     hist(pp, data_input_SS2S, data_output_SS2S, 'SS2S', rasterized)
 
 # generate torch trainset and trainloader
-trainset_Ge2L, trainloader_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L, 'Ge2L', device, batch_size)
-trainset_Ge2S, trainloader_Ge2S = set_generate(data_input_Ge2S, data_output_Ge2S, 'Ge2S', device, batch_size)
-trainset_L2L, trainloader_L2L = set_generate(data_input_L2L, data_output_L2L, 'L2L', device, batch_size)
-trainset_S2S, trainloader_S2S = set_generate(data_input_S2S, data_output_S2S, 'S2S', device, batch_size)
-trainset_L2S, trainloader_L2S = set_generate(data_input_L2S, data_output_L2S, 'L2S', device, batch_size)
-trainset_S2L, trainloader_S2L = set_generate(data_input_S2L, data_output_S2L, 'S2L', device, batch_size)
-trainset_SS2L, trainloader_SS2L = set_generate(data_input_SS2L, data_output_SS2L, 'SS2L', device, batch_size)
-trainset_SL2L, trainloader_SL2L = set_generate(data_input_SL2L, data_output_SL2L, 'SL2L', device, batch_size)
-trainset_LL2S, trainloader_LL2S = set_generate(data_input_LL2S, data_output_LL2S, 'LL2S', device, batch_size)
-trainset_SL2S, trainloader_SL2S = set_generate(data_input_SL2S, data_output_SL2S, 'SL2S', device, batch_size)
-trainset_SS2S, trainloader_SS2S = set_generate(data_input_SS2S, data_output_SS2S, 'SS2S', device, batch_size)
+trainset_Ge2L, trainloader_Ge2L, valset_Ge2L, val_input_Ge2L, val_output_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L, 'Ge2L', device, batch_size)
+trainset_Ge2S, trainloader_Ge2S, valset_Ge2S, val_input_Ge2S, val_output_Ge2S = set_generate(data_input_Ge2S, data_output_Ge2S, 'Ge2S', device, batch_size)
+trainset_L2L, trainloader_L2L, valset_L2L, val_input_L2L, val_output_L2L = set_generate(data_input_L2L, data_output_L2L, 'L2L', device, batch_size)
+trainset_S2S, trainloader_S2S, valset_S2S, val_input_S2S, val_output_S2S = set_generate(data_input_S2S, data_output_S2S, 'S2S', device, batch_size)
+trainset_L2S, trainloader_L2S, valset_L2S, val_input_L2S, val_output_L2S = set_generate(data_input_L2S, data_output_L2S, 'L2S', device, batch_size)
+trainset_S2L, trainloader_S2L, valset_S2L, val_input_S2L, val_output_S2L = set_generate(data_input_S2L, data_output_S2L, 'S2L', device, batch_size)
+trainset_SS2L, trainloader_SS2L, valset_SS2L, val_input_SS2L, val_output_SS2L = set_generate(data_input_SS2L, data_output_SS2L, 'SS2L', device, batch_size)
+trainset_SL2L, trainloader_SL2L, valset_SL2L, val_input_SL2L, val_output_SL2L = set_generate(data_input_SL2L, data_output_SL2L, 'SL2L', device, batch_size)
+trainset_LL2S, trainloader_LL2S, valset_LL2S, val_input_LL2S, val_output_LL2S = set_generate(data_input_LL2S, data_output_LL2S, 'LL2S', device, batch_size)
+trainset_SL2S, trainloader_SL2S, valset_SL2S, val_input_SL2S, val_output_SL2S = set_generate(data_input_SL2S, data_output_SL2S, 'SL2S', device, batch_size)
+trainset_SS2S, trainloader_SS2S, valset_SS2S, val_input_SS2S, val_output_SS2S = set_generate(data_input_SS2S, data_output_SS2S, 'SS2S', device, batch_size)
 
 
 ##### Part V: Training #####
 print('***** Training! *****')
 # ground effect doesn't consider x and y
-phi_G_net = phi_Net(inputdim=4,hiddendim=20).to(device, dtype=torch.float32)
-phi_L_net = phi_Net(inputdim=6,hiddendim=20).to(device, dtype=torch.float32)
-phi_S_net = phi_Net(inputdim=6,hiddendim=20).to(device, dtype=torch.float32)
-rho_L_net = rho_Net(hiddendim=20).to(device, dtype=torch.float32)
-rho_S_net = rho_Net(hiddendim=20).to(device, dtype=torch.float32)
+phi_G_net = phi_Net(inputdim=4,hiddendim=hidden_dim).to(device, dtype=torch.float32)
+phi_L_net = phi_Net(inputdim=6,hiddendim=hidden_dim).to(device, dtype=torch.float32)
+phi_S_net = phi_Net(inputdim=6,hiddendim=hidden_dim).to(device, dtype=torch.float32)
+rho_L_net = rho_Net(hiddendim=hidden_dim).to(device, dtype=torch.float32)
+rho_S_net = rho_Net(hiddendim=hidden_dim).to(device, dtype=torch.float32)
 
 criterion = nn.MSELoss()
 optimizer_phi_G = optim.Adam(phi_G_net.parameters(), lr=1e-3)
@@ -542,6 +544,27 @@ print('LL2S loss after training', set_loss(trainset_LL2S, criterion, rho_S_net, 
 print('SL2S loss after training', set_loss(trainset_SL2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_L_net))
 print('SS2S loss after training', set_loss(trainset_SS2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_S_net))
 
+Error = []
+Error.append(set_loss(valset_Ge2L, criterion, rho_L_net, phi_G_net, GE=True))
+Error.append(set_loss(valset_Ge2S, criterion, rho_S_net, phi_G_net, GE=True))
+Error.append(set_loss(valset_L2L, criterion, rho_L_net, phi_L_net))
+Error.append(set_loss(valset_S2S, criterion, rho_S_net, phi_S_net))
+Error.append(set_loss(valset_L2S, criterion, rho_S_net, phi_L_net))
+Error.append(set_loss(valset_S2L, criterion, rho_L_net, phi_S_net))
+Error.append(set_loss(valset_SS2L, criterion, rho_L_net, phi_S_net, phi_2_net=phi_S_net))
+Error.append(set_loss(valset_SL2L, criterion, rho_L_net, phi_S_net, phi_2_net=phi_L_net))
+Error.append(set_loss(valset_LL2S, criterion, rho_S_net, phi_L_net, phi_2_net=phi_L_net))
+Error.append(set_loss(valset_SL2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_L_net))
+Error.append(set_loss(valset_SS2S, criterion, rho_S_net, phi_S_net, phi_2_net=phi_S_net))
+Error = np.array(Error)
+weight = np.array([len(valset_Ge2L), len(valset_Ge2S), len(valset_L2L), len(valset_S2S), len(valset_L2S), len(valset_S2L), len(valset_SS2L), len(valset_SL2L), len(valset_LL2S), len(valset_SL2S), len(valset_SS2S)])
+mean_error = np.sum(Error*weight) / np.sum(weight)
+print('Validation error:')
+print(Error)
+print('mean:')
+print(mean_error)
+
+
 phi_G_net.cpu()
 phi_L_net.cpu()
 phi_S_net.cpu()
@@ -623,17 +646,17 @@ def validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_i
     plt.close()
     #plt.show()
 
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_Ge2L, data_output_Ge2L, ss=0, ee=-1, name='Ge2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_Ge2S, data_output_Ge2S, ss=0, ee=-1, name='Ge2S')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_L2L, data_output_L2L, ss=0, ee=-1, name='L2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_S2S, data_output_S2S, ss=0, ee=-1, name='S2S')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_L2S, data_output_L2S, ss=0, ee=-1, name='L2S')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_S2L, data_output_S2L, ss=0, ee=-1, name='S2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_SS2L, data_output_SS2L, ss=0, ee=-1, name='SS2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_SL2L, data_output_SL2L, ss=0, ee=-1, name='SL2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_LL2S, data_output_LL2S, ss=0, ee=-1, name='LL2L')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_SL2S, data_output_SL2S, ss=0, ee=-1, name='SL2S')
-validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input_SS2S, data_output_SS2S, ss=0, ee=-1, name='SS2S')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_Ge2L, val_output_Ge2L, ss=0, ee=-1, name='Ge2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_Ge2S, val_output_Ge2S, ss=0, ee=-1, name='Ge2S')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_L2L, val_output_L2L, ss=0, ee=-1, name='L2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_S2S, val_output_S2S, ss=0, ee=-1, name='S2S')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_L2S, val_output_L2S, ss=0, ee=-1, name='L2S')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_S2L, val_output_S2L, ss=0, ee=-1, name='S2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_SS2L, val_output_SS2L, ss=0, ee=-1, name='SS2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_SL2L, val_output_SL2L, ss=0, ee=-1, name='SL2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_LL2S, val_output_LL2S, ss=0, ee=-1, name='LL2L')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_SL2S, val_output_SL2S, ss=0, ee=-1, name='SL2S')
+validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, val_input_SS2S, val_output_SS2S, ss=0, ee=-1, name='SS2S')
 
 pp.close()
 print('***** Output PDF saved! *****')

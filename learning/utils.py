@@ -165,20 +165,27 @@ def Fa(Data, m, g, p_00, p_10, p_01, p_20, p_11):
     force_pwm_3 = p_00 + p_10 * Data['pwm'][:, 2] + p_01 * Data['vol'] + p_20 * Data['pwm'][:, 2]**2 + p_11 * Data['vol'] * Data['pwm'][:, 2]
     force_pwm_4 = p_00 + p_10 * Data['pwm'][:, 3] + p_01 * Data['vol'] + p_20 * Data['pwm'][:, 3]**2 + p_11 * Data['vol'] * Data['pwm'][:, 3]
     thrust_pwm = force_pwm_1 + force_pwm_2 + force_pwm_3 + force_pwm_4 # gram
-    
+    # consider delay
+    thrust_pwm_delay = np.zeros(len(thrust_pwm))
+    for i in range(len(thrust_pwm)-1):
+        thrust_pwm_delay[i+1] = (1-0.16)*thrust_pwm_delay[i] + 0.16*thrust_pwm[i] 
+
     Fa = np.zeros([Data['time'].shape[0], 3])
+    Fa_delay = np.zeros([Data['time'].shape[0], 3])
     Fa_num = np.zeros([Data['time'].shape[0], 3])
     Fa_filter = np.zeros([Data['time'].shape[0], 3])
     Fa_smooth = np.zeros([Data['time'].shape[0], 3])
     force_world = np.zeros([Data['time'].shape[0], 3])
     for i in range(Data['time'].shape[0]):
         Fa[i, :] = m * Data['acc_imu'][i, :] / 1000 - thrust_pwm[i] / 1000 * g * R[i, :, 2] # Newton
+        Fa_delay[i, :] = m * Data['acc_imu'][i, :] / 1000 - thrust_pwm_delay[i] / 1000 * g * R[i, :, 2] # Newton
         Fa_num[i, :] = m * np.array([0, 0, g]) / 1000 + m * Data['acc_num'][i, :] / 1000 - thrust_pwm[i] / 1000 * g * R[i, :, 2] # Newton
         Fa_filter[i, :] = m * np.array([0, 0, g]) / 1000 + m * Data['acc_filter'][i, :] / 1000 - thrust_pwm[i] / 1000 * g * R[i, :, 2] # Newton
         Fa_smooth[i, :] = m * np.array([0, 0, g]) / 1000 + m * Data['acc_smooth'][i, :] / 1000 - thrust_pwm[i] / 1000 * g * R[i, :, 2] # Newton
         force_world[i, :] = thrust_pwm[i] / 1000 * g * R[i, :, 2] # Newton
     
     Data['fa_imu'] = Fa
+    Data['fa_delay'] = Fa_delay
     Data['fa_num'] = Fa_num
     Data['fa_filter'] = Fa_filter
     Data['fa_smooth'] = Fa_smooth
@@ -187,8 +194,7 @@ def Fa(Data, m, g, p_00, p_10, p_01, p_20, p_11):
 
 # Get numpy data input and output pair
 # s can be used for data type
-def get_data(D1, D2, D3=None, s=0):
-    typ = 'fa_imu'
+def get_data(D1, D2, D3=None, s=0, typ='fa_imu'):
     g = 9.81
     L = D1['time'].shape[0]
     data_input = np.zeros([L, 13], dtype=np.float32)
@@ -308,14 +314,36 @@ class MyDataset(Dataset):
         return sample
 
 
+def split(data, p=0.1):
+    L = len(data)
+    l = int(np.floor(L*p))
+    np.random.seed(0)
+    start = np.random.randint(int(L*(1-p)))
+    temp = np.split(data, [start, start+l], axis=0)
+    part_1 = temp[1]
+    part_2 = np.vstack((temp[0], temp[2]))
+    return part_1, part_2
+
 # Input numpy data_input (7x1) and data_output (3x1)
 # Output trainset and trainloader in torch
 def set_generate(data_input, data_output, type, device, batch_size):
+    # 20% for validation
+    val_input_1, data_input = split(data_input, p=0.1)
+    val_output_1, data_output = split(data_output, p=0.1)
+    val_input_2, data_input = split(data_input, p=1.0/9)
+    val_output_2, data_output = split(data_output, p=1.0/9)
+    val_input = np.vstack((val_input_1, val_input_2))
+    val_output = np.vstack((val_output_1, val_output_2))   
+
     Data_input = torch.from_numpy(data_input[:, :]).float().to(device) # 7x1
     Data_output = torch.from_numpy(data_output[:, 2:]).float().to(device) # 1x1
+    Val_input = torch.from_numpy(val_input[:, :]).float().to(device)
+    Val_output = torch.from_numpy(val_output[:, 2:]).float().to(device)
     trainset = MyDataset(Data_input, Data_output, type)
+    valset = MyDataset(Val_input, Val_output, type)
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
-    return trainset, trainloader
+    return trainset, trainloader, valset, val_input, val_output
+
 
 # Vis of NNs
 def heatmap(phi_net, rho_net, x_2=0, y_2=0, z_2=0.5, vx_2=0, vy_2=0, vz_2=0):
