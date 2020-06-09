@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import random
 from scipy import interpolate
 from scipy.interpolate import interp1d
 from scipy import signal
@@ -314,26 +315,25 @@ class MyDataset(Dataset):
         return sample
 
 
-def split(data, p=0.1):
+def split(data, type, val_num=10, num=50):
+    # 50 pieces together, and 10 pieces for validation
     L = len(data)
-    l = int(np.floor(L*p))
-    np.random.seed(0)
-    start = np.random.randint(int(L*(1-p)))
-    temp = np.split(data, [start, start+l], axis=0)
-    part_1 = temp[1]
-    part_2 = np.vstack((temp[0], temp[2]))
-    return part_1, part_2
+    temp = np.split(data[:L-np.mod(L,num),:], num, axis=0)
+    code = np.sum([ord(s) for s in type])
+    random.seed(code) # fix the seed for each scenario
+    val_index = random.sample([i for i in range(num)], val_num)
+    val_index_sorted = sorted(val_index)
+    train_index_sorted = sorted([i for i in range(num) if i not in val_index])
+    val_data = np.concatenate([temp[i] for i in val_index_sorted], axis=0)
+    train_data = np.concatenate([temp[i] for i in train_index_sorted], axis=0)
+    return val_data, train_data
 
 # Input numpy data_input (7x1) and data_output (3x1)
 # Output trainset and trainloader in torch
 def set_generate(data_input, data_output, type, device, batch_size):
     # 20% for validation
-    val_input_1, data_input = split(data_input, p=0.1)
-    val_output_1, data_output = split(data_output, p=0.1)
-    val_input_2, data_input = split(data_input, p=1.0/9)
-    val_output_2, data_output = split(data_output, p=1.0/9)
-    val_input = np.vstack((val_input_1, val_input_2))
-    val_output = np.vstack((val_output_1, val_output_2))   
+    val_input, data_input = split(data_input, type=type)
+    val_output, data_output = split(data_output, type=type)
 
     Data_input = torch.from_numpy(data_input[:, :]).float().to(device) # 7x1
     Data_output = torch.from_numpy(data_output[:, 2:]).float().to(device) # 1x1

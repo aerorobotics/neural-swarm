@@ -12,7 +12,7 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "val/epoch100_lip2_h20"
+output_name = "val_new_split/epoch100_lip2_h20"
 lip = 2
 num_epochs = 100
 hidden_dim = 20
