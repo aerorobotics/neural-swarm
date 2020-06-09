@@ -9,10 +9,10 @@ nn-export-test:
 swig:
 	swig -python nnexport.i
 	gcc -std=c99 -shared -fPIC \
-		-I/usr/include/python3.6 \
+		-I/usr/include/python3.8 \
 		nnexport_wrap.c \
 		nn.c \
-		-lm -lpython3.6m \
+		-lm -lpython3.8 \
 		-g \
 		-o _nnexport.so
 
