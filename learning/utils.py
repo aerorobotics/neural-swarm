@@ -168,6 +168,7 @@ def Fa(Data, m, g, p_00, p_10, p_01, p_20, p_11):
     thrust_pwm = force_pwm_1 + force_pwm_2 + force_pwm_3 + force_pwm_4 # gram
     # consider delay
     thrust_pwm_delay = np.zeros(len(thrust_pwm))
+    thrust_pwm_delay[0] = thrust_pwm[0]
     for i in range(len(thrust_pwm)-1):
         thrust_pwm_delay[i+1] = (1-0.16)*thrust_pwm_delay[i] + 0.16*thrust_pwm[i] 
 
