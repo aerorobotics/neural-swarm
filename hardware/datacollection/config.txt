@@ -1,0 +1,39 @@
+100   # frequency
+20    # buffer size
+cf50_   # file name
+0     # enable on startup (0/1)
+1     # mode (0: disabled, 1: synchronous stabilizer, 2: asynchronous)
+stateEstimateZ.x
+stateEstimateZ.y
+stateEstimateZ.z
+stateEstimateZ.vx
+stateEstimateZ.vy
+stateEstimateZ.vz
+stateEstimateZ.ax
+stateEstimateZ.ay
+stateEstimateZ.az
+stateEstimateZ.quat
+stateEstimateZ.rateRoll
+stateEstimateZ.ratePitch
+stateEstimateZ.rateYaw
+ctrltargetZ.x
+ctrltargetZ.y
+ctrltargetZ.z
+ctrltargetZ.vx
+ctrltargetZ.vy
+ctrltargetZ.vz
+motor.thrust
+motor.torquex
+motor.torquey
+motor.torquez
+motor.f1
+motor.f2
+motor.f3
+motor.f4
+pwm.m1_pwm
+pwm.m2_pwm
+pwm.m3_pwm
+pwm.m4_pwm
+pwm.maxThrust
+pm.vbatMV
+ctrlFa.Faz
