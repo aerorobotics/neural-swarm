@@ -155,16 +155,28 @@ vel = np.column_stack((
 print(vel.shape, time.shape)
 acc2 = np.diff(vel, axis=0) / np.column_stack((np.diff(time), np.diff(time), np.diff(time)))
 
-Thrust = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+thrust = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+
+# consider delay
+thrust_delay = np.zeros(len(thrust))
+thrust_delay[0] = thrust[0]
+for i in range(len(thrust)-1):
+  thrust_delay[i+1] = (1-0.16)*thrust_delay[i] + 0.16*thrust[i] 
 
 fa = []
-for q, a, T in zip(quatState, acc, Thrust):
+for q, a, T in zip(quatState, acc, thrust):
   fu = np.array([0, 0, T])
   fa.append(mass * a - mass * np.array([0,0,-9.81]) - rotation_matrix(q) @ fu)
-
 fa = np.array(fa)
 
-plt.plot(time, fa[:,2] / 9.81 * 1000, '-', label='Fa.z')
+fa_delay = []
+for q, a, T in zip(quatState, acc, thrust_delay):
+  fu = np.array([0, 0, T])
+  fa_delay.append(mass * a - mass * np.array([0,0,-9.81]) - rotation_matrix(q) @ fu)
+fa_delay = np.array(fa_delay)
+
+# plt.plot(time, fa[:,2] / 9.81 * 1000, '-', label='Fa.z')
+plt.plot(time, fa_delay[:,2] / 9.81 * 1000, '-', label='Fa.z (delay)')
 # plt.plot(time, acc[:,2])
 # plt.plot(time[1:], acc2[:,2])
 if "ctrlFa.Faz" in logData:
