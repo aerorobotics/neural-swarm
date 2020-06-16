@@ -1,4 +1,4 @@
-from utils import interpolation_cubic, data_extraction, Merge, Fa, get_data, hist, set_generate
+from utils import interpolation_cubic, data_extraction, Merge, Fa, get_data, hist, hist_all, set_generate, data_filter
 from vis_validation import vis
 from nns import phi_Net, rho_Net
 import numpy as np
@@ -12,13 +12,16 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "val_new_split/epoch100_lip2_h20"
-lip = 2
-num_epochs = 100
+output_name = "val_filter/epoch20_lip3_h20_f0d3"
+lip = 3
+num_epochs = 20
 hidden_dim = 20
 batch_size = 128
 rasterized = True # set to True, to rasterize the pictures in the PDF
 fa_type = 'fa_delay' # 'fa_imu', fa_num', 'fa_delay'
+x_threshold = 0.3 # threshold for data filtering
+y_threshold = 0.3 # threshold for data filtering
+Filter = True
 
 # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
 # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
@@ -331,32 +334,44 @@ data_input_SS2S = np.vstack((data_input_SS2S_a, data_input_SS2S_b, data_input_SS
 data_output_SS2S = np.vstack((data_output_SS2S_a, data_output_SS2S_b, data_output_SS2S_c))
 print('SS2S:', data_input_SS2S.shape, data_output_SS2S.shape)
 
+Data_input_all = [data_input_Ge2L, data_input_Ge2S, data_input_L2L, data_input_S2S, data_input_L2S, data_input_S2L, \
+                   data_input_SS2L, data_input_SL2L, data_input_LL2S, data_input_SL2S, data_input_SS2S]
+Data_output_all = [data_output_Ge2L, data_output_Ge2S, data_output_L2L, data_output_S2S, data_output_L2S, data_output_S2L, \
+                   data_output_SS2L, data_output_SL2L, data_output_LL2S, data_output_SL2S, data_output_SS2S]
+Name = ['Ge2L', 'Ge2S', 'L2L', 'S2S', 'L2S', 'S2L', 'SS2L', 'SL2L', 'LL2S', 'SL2S', 'SS2S']
+
 if False:
     # visualization of data distribution
-    hist(pp, data_input_Ge2L, data_output_Ge2L, 'Ge2L', rasterized)
-    hist(pp, data_input_Ge2S, data_output_Ge2S, 'Ge2S', rasterized)
-    hist(pp, data_input_L2L, data_output_L2L, 'L2L', rasterized)
-    hist(pp, data_input_S2S, data_output_S2S, 'S2S', rasterized)
-    hist(pp, data_input_L2S, data_output_L2S, 'L2S', rasterized)
-    hist(pp, data_input_S2L, data_output_S2L, 'S2L', rasterized)
-    hist(pp, data_input_SS2L, data_output_SS2L, 'SS2L', rasterized)
-    hist(pp, data_input_SL2L, data_output_SL2L, 'SL2L', rasterized)
-    hist(pp, data_input_LL2S, data_output_LL2S, 'LL2S', rasterized)
-    hist(pp, data_input_SL2S, data_output_SL2S, 'SL2S', rasterized)
-    hist(pp, data_input_SS2S, data_output_SS2S, 'SS2S', rasterized)
+    for i in range(len(Name)):
+        hist(pp, Data_input_all[i], Data_output_all[i], Name[i], rasterized)
+
+hist_all(pp, Data_output_all, Name, rasterized, note='before filter')
+
+# Data filter 
+if Filter:
+    for i in range(len(Name)):
+        Data_input_all[i], Data_output_all[i] = data_filter(Data_input_all[i], Data_output_all[i], x_threshold=x_threshold, y_threshold=y_threshold)
+
+if False:
+    # visualization of data distribution
+    for i in range(len(Name)):
+        hist(pp, Data_input_all[i], Data_output_all[i], Name[i], rasterized)
+
+hist_all(pp, Data_output_all, Name, rasterized, note='after filter')
+
 
 # generate torch trainset and trainloader
-trainset_Ge2L, trainloader_Ge2L, valset_Ge2L, val_input_Ge2L, val_output_Ge2L = set_generate(data_input_Ge2L, data_output_Ge2L, 'Ge2L', device, batch_size)
-trainset_Ge2S, trainloader_Ge2S, valset_Ge2S, val_input_Ge2S, val_output_Ge2S = set_generate(data_input_Ge2S, data_output_Ge2S, 'Ge2S', device, batch_size)
-trainset_L2L, trainloader_L2L, valset_L2L, val_input_L2L, val_output_L2L = set_generate(data_input_L2L, data_output_L2L, 'L2L', device, batch_size)
-trainset_S2S, trainloader_S2S, valset_S2S, val_input_S2S, val_output_S2S = set_generate(data_input_S2S, data_output_S2S, 'S2S', device, batch_size)
-trainset_L2S, trainloader_L2S, valset_L2S, val_input_L2S, val_output_L2S = set_generate(data_input_L2S, data_output_L2S, 'L2S', device, batch_size)
-trainset_S2L, trainloader_S2L, valset_S2L, val_input_S2L, val_output_S2L = set_generate(data_input_S2L, data_output_S2L, 'S2L', device, batch_size)
-trainset_SS2L, trainloader_SS2L, valset_SS2L, val_input_SS2L, val_output_SS2L = set_generate(data_input_SS2L, data_output_SS2L, 'SS2L', device, batch_size)
-trainset_SL2L, trainloader_SL2L, valset_SL2L, val_input_SL2L, val_output_SL2L = set_generate(data_input_SL2L, data_output_SL2L, 'SL2L', device, batch_size)
-trainset_LL2S, trainloader_LL2S, valset_LL2S, val_input_LL2S, val_output_LL2S = set_generate(data_input_LL2S, data_output_LL2S, 'LL2S', device, batch_size)
-trainset_SL2S, trainloader_SL2S, valset_SL2S, val_input_SL2S, val_output_SL2S = set_generate(data_input_SL2S, data_output_SL2S, 'SL2S', device, batch_size)
-trainset_SS2S, trainloader_SS2S, valset_SS2S, val_input_SS2S, val_output_SS2S = set_generate(data_input_SS2S, data_output_SS2S, 'SS2S', device, batch_size)
+trainset_Ge2L, trainloader_Ge2L, valset_Ge2L, val_input_Ge2L, val_output_Ge2L = set_generate(Data_input_all[0], Data_output_all[0], 'Ge2L', device, batch_size)
+trainset_Ge2S, trainloader_Ge2S, valset_Ge2S, val_input_Ge2S, val_output_Ge2S = set_generate(Data_input_all[1], Data_output_all[1], 'Ge2S', device, batch_size)
+trainset_L2L, trainloader_L2L, valset_L2L, val_input_L2L, val_output_L2L = set_generate(Data_input_all[2], Data_output_all[2], 'L2L', device, batch_size)
+trainset_S2S, trainloader_S2S, valset_S2S, val_input_S2S, val_output_S2S = set_generate(Data_input_all[3], Data_output_all[3], 'S2S', device, batch_size)
+trainset_L2S, trainloader_L2S, valset_L2S, val_input_L2S, val_output_L2S = set_generate(Data_input_all[4], Data_output_all[4], 'L2S', device, batch_size)
+trainset_S2L, trainloader_S2L, valset_S2L, val_input_S2L, val_output_S2L = set_generate(Data_input_all[5], Data_output_all[5], 'S2L', device, batch_size)
+trainset_SS2L, trainloader_SS2L, valset_SS2L, val_input_SS2L, val_output_SS2L = set_generate(Data_input_all[6], Data_output_all[6], 'SS2L', device, batch_size)
+trainset_SL2L, trainloader_SL2L, valset_SL2L, val_input_SL2L, val_output_SL2L = set_generate(Data_input_all[7], Data_output_all[7], 'SL2L', device, batch_size)
+trainset_LL2S, trainloader_LL2S, valset_LL2S, val_input_LL2S, val_output_LL2S = set_generate(Data_input_all[8], Data_output_all[8], 'LL2S', device, batch_size)
+trainset_SL2S, trainloader_SL2S, valset_SL2S, val_input_SL2S, val_output_SL2S = set_generate(Data_input_all[9], Data_output_all[9], 'SL2S', device, batch_size)
+trainset_SS2S, trainloader_SS2S, valset_SS2S, val_input_SS2S, val_output_SS2S = set_generate(Data_input_all[10], Data_output_all[10], 'SS2S', device, batch_size)
 
 
 ##### Part V: Training #####
