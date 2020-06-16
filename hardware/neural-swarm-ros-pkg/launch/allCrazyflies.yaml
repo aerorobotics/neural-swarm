@@ -9,22 +9,22 @@ crazyflies:
     initialPosition: [0.0, 0.5, 0.0]
     type: CF21SingleMarker
 
-  # - id: 51
-  #   channel: 80
-  #   initialPosition: [0.0, 0.0, 0.0]
-  #   type: CF21SingleMarker
+  - id: 51
+    channel: 80
+    initialPosition: [0.0, 0.0, 0.0]
+    type: CF21SingleMarker
 
-  # - id: 52
-  #   channel: 80
-  #   initialPosition: [0.0, -0.5, 0.0]
-  #   type: CF21SingleMarker
+  - id: 52
+    channel: 80
+    initialPosition: [0.0, -0.5, 0.0]
+    type: CF21SingleMarker
 
   - id: 101
     channel: 80
-    initialPosition: [0.0, 0.0, 0.0]
+    initialPosition: [0.5, 0.0, 0.0]
     type: parrotFrameCF21SingleMarker
 
-  # - id: 102
-  #   channel: 80
-  #   initialPosition: [0.0, -0.5, 0.0]
-  #   type: parrotFrameCF21SingleMarker
+  - id: 102
+    channel: 80
+    initialPosition: [0.5, -0.5, 0.0]
+    type: parrotFrameCF21SingleMarker
