@@ -373,6 +373,7 @@ def vis_paper(phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized)
     plt.savefig('../data/vis.pdf')
     plt.show()
 
+'''
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 h = 20
@@ -396,3 +397,4 @@ rho_L_net.cpu()
 rho_S_net.cpu()
 
 vis_paper(phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized=False)
+'''

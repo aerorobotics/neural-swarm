@@ -217,6 +217,19 @@ def get_data(D1, D2, D3=None, s=0, typ='fa_imu'):
     
     return data_input, data_output
 
+def data_filter(data_input, data_output, x_threshold=0.4, y_threshold=0.4):
+    s = data_input[0, -1]
+    if s == encoder['Ge2L'] or s == encoder['Ge2S']:
+        return data_input, data_output
+    for i in range(len(data_input)):
+        if np.abs(data_input[i, 0]) > x_threshold or np.abs(data_input[i, 1]) > y_threshold:
+            if s == encoder['SS2L'] or s == encoder['SL2L'] or s == encoder['LL2S'] or s == encoder['SL2S'] or s == encoder['SS2S']:
+                if np.abs(data_input[i, 6]) > x_threshold or np.abs(data_input[i, 7]) > y_threshold:
+                    data_output[i, 2] = 10001.0
+            else:
+                data_output[i, 2] = 10001.0
+    return data_input[data_output[:, 2] < 10000], data_output[data_output[:, 2] < 10000]
+
 # Histogram visualization of numpy data input and output pair
 def hist(pp, data_input, data_output, name, rasterized):
     plt.figure(figsize=(12,12))
@@ -296,6 +309,19 @@ def hist(pp, data_input, data_output, name, rasterized):
     pp.savefig()
     plt.close()
     #plt.show()
+
+def hist_all(pp, Data_output, Name, rasterized, note='before filter'):
+    L = len(Name)
+    plt.figure(figsize=(12, 4))
+    for i in range(L):
+        plt.subplot(2, int(np.ceil(L/2.0)), i+1, rasterized=rasterized)
+        plt.hist(Data_output[i][:, 2], 50, density=True)
+        plt.title(Name[i] + ': ' + str(len(Data_output[i][:, 2])))
+        if i == 0:
+            plt.legend(note)
+    plt.tight_layout()
+    pp.savefig()
+    plt.close()
 
 # Dataset in torch
 class MyDataset(Dataset):
