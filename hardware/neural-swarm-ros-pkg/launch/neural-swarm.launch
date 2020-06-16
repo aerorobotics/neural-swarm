@@ -14,39 +14,85 @@
       genericLogTopic_log1_Variables: ["stateEstimate.x", "ctrltarget.x"]
       # firmware parameters for all drones (use crazyflieTypes.yaml to set per type, or
       # allCrazyflies.yaml to set per drone)
-      firmwareParams:
+      firmwareParams: # for all (independent of type)
+        planner:
+          enAP: 0 # set this to 1 to enable artificial potential
+          # regular CFs
+          # Ko: 0.2 # gain for obstacles
+          # Kp: 8.0
+          # Kd: 4.0
+          # Rsafe: 0.45
+          # max_a: 1.0
+          # max_v: 0.25
+
+          # Parrot frame
+          # Ko: 0.25 # gain for obstacles
+          # Kp: 8.0
+          # Kd: 4.0
+          # Rsafe: 0.45
+          # max_a: 1.0
+          # max_v: 0.25
+
+          # # mixed parrot/CF
+          # Ko: 0.3 # gain for obstacles
+          # Kp: 8.0
+          # Kd: 4.0
+          # Rsafe: 0.45
+          # max_a: 1.0
+          # max_v: 0.25
+
+          # 2xparrot + 1 CF
+          Ko: 0.35 # gain for obstacles
+          Kp: 8.0
+          Kd: 4.0
+          Rsafe: 0.45
+          max_a: 1.0
+          max_v: 0.25
+
+        ctrlFa:
+          enableNN: 0 # 0: disable, 1: enable computation but don't apply Fa, 2: enable
+          #scaleHack: 0.7
         commander:
           enHighLevel: 1
-#        stabilizer:
-#          estimator: 2 # 1: complementary, 2: kalman
-#          controller: 2 # 1: PID, 2: mellinger
-#        ring:
-#          effect: 16 # 6: double spinner, 7: solid color, 16: packetRate
-#          solidBlue: 255 # if set to solid color
-#          solidGreen: 0 # if set to solid color
-#          solidRed: 0 # if set to solid color
-#          headlightEnable: 0
-#        locSrv:
-#          extPosStdDev: 1e-3
-#          extQuatStdDev: 0.5e-1
-#        kalman:
-#          pNAcc_xy: 1.0
-#          pNAcc_z: 2.0
+        stabilizer:
+          estimator: 2 # 1: complementary, 2: kalman, 3: kalmanUSC (only crazyswarm firmware)
+          controller: 3 # 1: PID, 2: mellinger, 3: SJC, 4: mellingerSI, 5: Lee
+        ring:
+          effect: 16 # 6: double spinner, 7: solid color, 16: packetRate
+          solidBlue: 255 # if set to solid color
+          solidGreen: 0 # if set to solid color
+          solidRed: 0 # if set to solid color
+          headlightEnable: 0
+        #kalmanUSC:
+        #  useFakeVel: 1
+        locSrv:
+          extPosStdDev: 1e-3
+          extQuatStdDev: 0.5e-1
+        kalman:
+          stdInitialYaw: 0.1
+          resetEstimation: 1
+          updateQuat: 1
+        imu_sensors:
+          useLpfGyro: 1 # default: 1
+          gyroMode: 0 # 0: BW92/4ms (default), 1: BW184/3ms, 2: BW250,1ms, 3: BW3600/0.11ms, 4: BW8800/0.064ms
       # tracking
-      motion_capture_type: "none" # one of none,vicon,optitrack,qualisys,vrpn
+      motion_capture_type: "vicon" # one of none,test,vicon,optitrack,qualisys,vrpn
       object_tracking_type: "libobjecttracker" # one of motionCapture,libobjecttracker
-      send_position_only: False # set to False to send position+orientation; set to True to send position only
-      vicon_host_name: "vicon"
-      # optitrack_host_name: "optitrack"
+      send_position_only: True # set to False to send position+orientation; set to True to send position only
+      vicon_host_name: "192.168.50.253" #192.168.50.253" #"192.168.2.50"
+      optitrack_host_name: "192.168.50.6"
       # qualisys_host_name: "10.0.5.219"
       # qualisys_base_port: 22222
       # vrpn_host_name: "vicon"
       save_point_clouds: ~/pointCloud.ot
       print_latency: False
-      write_csvs: False
+      write_csvs: True
       force_no_cache: False
       enable_parameters: True
       enable_logging: False
+      enable_logging_pose: False
+      broadcasting_num_repeats: 15 # 15
+      broadcasting_delay_between_repeats_ms: 1 # 1
     </rosparam>
   </node>
 
@@ -59,9 +105,25 @@
     <param name="timescale" value="0.8" />
   </node>
 
+
+  <!-- <node pkg="crazyswarm" type="controllerSJC.py" name="controllerSJC" output="screen" /> -->
+
+  <!-- <node pkg="crazyswarm" type="setpointGenerator.py" name="setpointGenerator" output="screen" /> -->
+
+
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find crazyswarm)/launch/test.rviz"/>
 
   <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_x" args="/cf2/log1/values[0]"/> -->
-  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_roll" args="/cf1/log1/values[2] /cf1/log1/values[3]"/> -->
+  
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_x" args="/cf20/log1/values[0] /cf20/log1/values[3]"/> -->
+
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_y" args="/cf20/log1/values[1] /cf20/log1/values[4]"/> -->
+
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_z" args="/cf20/log1/values[2] /cf20/log1/values[5]"/> -->
+
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_z" args="/cf20/log1/values[0] /cf20/log1/values[1] /cf20/log1/values[2]"/> -->
+
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_roll" args="/cf20/log1/values[0] /cf20/log1/values[1] /cf20/log1/values[2]"/> -->
+  <!-- <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot_rateRoll" args="/cf20/log1/values[3] /cf20/log1/values[4] /cf20/log1/values[5]"/> -->
 
 </launch>
