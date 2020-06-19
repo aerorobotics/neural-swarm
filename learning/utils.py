@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
 # 6:SS2L 7:SL2L 8:LL2S 9:SL2S 10:SS2S
 encoder = {'Ge2L':0, 'Ge2S':1, 'L2L':2, 'S2S':3, 'L2S':4, 'S2L':5, \
-           'SS2L':6, 'SL2L':7, 'LL2S':8, 'SL2S':9, 'SS2S':10}
+           'SS2L':6, 'SL2L':7, 'LL2S':8, 'SL2S':9, 'SS2S':10, 'LL2L':11}
 
 # Convert quaternion to rotation matrix
 def rotation_matrix(quat):
@@ -196,113 +196,179 @@ def Fa(Data, m, g, p_00, p_10, p_01, p_20, p_11):
 
 # Get numpy data input and output pair
 # s can be used for data type
-def get_data(D1, D2, D3=None, s=0, typ='fa_imu'):
+def get_data(D1, D2=None, D3=None, s=0, typ='fa_imu', always_GE=False):
     g = 9.81
     L = D1['time'].shape[0]
-    data_input = np.zeros([L, 13], dtype=np.float32)
-    data_output = np.zeros([L, 3], dtype=np.float32)
-    if s == encoder['Ge2L'] or s == encoder['Ge2S']:
-        # ground effect
+    if always_GE:
+        data_input = np.zeros([L, 19], dtype=np.float32)
+        data_output = np.zeros([L, 3], dtype=np.float32)
         data_input[:, :3] = 0 - D1['pos']
         data_input[:, 3:6] = 0 - D1['vel']
+        if D2 is not None:
+            data_input[:, 6:9] = D2['pos'] - D1['pos']
+            data_input[:, 9:12] = D2['vel'] - D1['vel']
+        if D3 is not None:
+            data_input[:, 12:15] = D3['pos'] - D1['pos']
+            data_input[:, 15:18] = D3['vel'] - D1['vel']
+        data_input[:, -1] = s
+        data_output[:, :] = D1[typ] / g * 1000 # Newton -> gram
     else:
-        data_input[:, :3] = D2['pos'] - D1['pos']
-        data_input[:, 3:6] = D2['vel'] - D1['vel']
-    if D3 is not None:
-        data_input[:, 6:9] = D3['pos'] - D1['pos']
-        data_input[:, 9:12] = D3['vel'] - D1['vel']
-    data_input[:, -1] = s
-    data_output[:, :] = D1[typ] / g * 1000 # Newton -> gram
-    # print(data_input.shape, data_output.shape)
+        data_input = np.zeros([L, 13], dtype=np.float32)
+        data_output = np.zeros([L, 3], dtype=np.float32)
+        if s == encoder['Ge2L'] or s == encoder['Ge2S']:
+            # ground effect
+            data_input[:, :3] = 0 - D1['pos']
+            data_input[:, 3:6] = 0 - D1['vel']
+        else:
+            data_input[:, :3] = D2['pos'] - D1['pos']
+            data_input[:, 3:6] = D2['vel'] - D1['vel']
+        if D3 is not None:
+            data_input[:, 6:9] = D3['pos'] - D1['pos']
+            data_input[:, 9:12] = D3['vel'] - D1['vel']
+        data_input[:, -1] = s
+        data_output[:, :] = D1[typ] / g * 1000 # Newton -> gram
     
     return data_input, data_output
 
-def data_filter(data_input, data_output, x_threshold=0.4, y_threshold=0.4):
+
+def data_filter(data_input, data_output, x_threshold=0.4, y_threshold=0.4, g_threshold=[0.06, 0.07]):
     s = data_input[0, -1]
+    '''
     if s == encoder['Ge2L'] or s == encoder['Ge2S']:
         return data_input, data_output
+    '''
+    if s == encoder['Ge2L'] or s == encoder['L2L'] or s == encoder['S2L'] or s == encoder['SS2L'] or s == encoder['SL2L'] or s == encoder['LL2L']:
+        ground_height = g_threshold[1]
+    else:
+        ground_height = g_threshold[0]
+
+    L = len(data_input)
+    num_g = 0
+    num_xy = 0
+
     for i in range(len(data_input)):
-        if np.abs(data_input[i, 0]) > x_threshold or np.abs(data_input[i, 1]) > y_threshold:
-            if s == encoder['SS2L'] or s == encoder['SL2L'] or s == encoder['LL2S'] or s == encoder['SL2S'] or s == encoder['SS2S']:
-                if np.abs(data_input[i, 6]) > x_threshold or np.abs(data_input[i, 7]) > y_threshold:
-                    data_output[i, 2] = 10001.0
+        flag = False
+        if -data_input[i, 2] <= ground_height:
+            flag = True
+            num_g += 1
+        if np.abs(data_input[i, 6]) > x_threshold or np.abs(data_input[i, 7]) > y_threshold:
+            if s == encoder['SS2L'] or s == encoder['SL2L'] or s == encoder['LL2S'] or s == encoder['SL2S'] or s == encoder['SS2S'] or s == encoder['LL2L']:
+                if np.abs(data_input[i, 12]) > x_threshold or np.abs(data_input[i, 13]) > y_threshold:
+                    flag = True
+                    num_xy += 1
             else:
-                data_output[i, 2] = 10001.0
-    return data_input[data_output[:, 2] < 10000], data_output[data_output[:, 2] < 10000]
+                flag = True
+                num_xy += 1
+        if flag:
+            data_output[i, 2] = 10001.0
+        else:
+            if np.abs(data_output[i, 2]) > 50:
+                data_output[i, 2] = 10001.0            
+    return data_input[data_output[:, 2] < 10000], data_output[data_output[:, 2] < 10000], num_g/L, num_xy/L
 
 # Histogram visualization of numpy data input and output pair
 def hist(pp, data_input, data_output, name, rasterized):
-    plt.figure(figsize=(12,12))
-    plt.subplot(5, 4, 1, rasterized=rasterized)
-    plt.hist(data_input[:, 0], 50, density=True)
-    plt.title(name+': x1')
-    plt.subplot(5, 4, 2, rasterized=rasterized)
-    plt.hist(data_input[:, 1], 50, density=True)
-    plt.title('y1')
-    plt.subplot(5, 4, 3, rasterized=rasterized)
-    plt.hist(data_input[:, 2], 50, density=True)
-    plt.title('z1')
-    plt.subplot(5, 4, 4, rasterized=rasterized)
-    plt.scatter(data_input[:, 1], data_input[:, 2], s=0.1)
-    plt.title('y1-z1')
-    plt.xlabel('y1')
-    plt.ylabel('z1')
+    plt.figure(figsize=(12,18))
+    plt.subplot(7, 4, 1, rasterized=rasterized)
+    plt.hist(-data_input[:, 0], 50, density=True)
+    plt.title(name+': x')
+    plt.subplot(7, 4, 2, rasterized=rasterized)
+    plt.hist(-data_input[:, 1], 50, density=True)
+    plt.title('y')
+    plt.subplot(7, 4, 3, rasterized=rasterized)
+    plt.hist(-data_input[:, 2], 50, density=True)
+    plt.title('z')
+    plt.subplot(7, 4, 4, rasterized=rasterized)
+    plt.scatter(-data_input[:, 1], -data_input[:, 2], s=0.1)
+    plt.title('y-z')
+    plt.xlabel('y')
+    plt.ylabel('z')
     
-    plt.subplot(5, 4, 5, rasterized=rasterized)
-    plt.hist(data_input[:, 3], 50, density=True)
-    plt.title('vx1')
-    plt.subplot(5, 4, 6, rasterized=rasterized)
-    plt.hist(data_input[:, 4], 50, density=True)
-    plt.title('vy1')
-    plt.subplot(5, 4, 7, rasterized=rasterized)
-    plt.hist(data_input[:, 5], 50, density=True)
-    plt.title('vz1')
-    plt.subplot(5, 4, 8, rasterized=rasterized)
-    plt.scatter(data_input[:, 4], data_input[:, 5], s=0.1)
-    plt.title('vy1-vz1')
-    plt.xlabel('vy1')
-    plt.ylabel('vz1')
+    plt.subplot(7, 4, 5, rasterized=rasterized)
+    plt.hist(-data_input[:, 3], 50, density=True)
+    plt.title('vx')
+    plt.subplot(7, 4, 6, rasterized=rasterized)
+    plt.hist(-data_input[:, 4], 50, density=True)
+    plt.title('vy')
+    plt.subplot(7, 4, 7, rasterized=rasterized)
+    plt.hist(-data_input[:, 5], 50, density=True)
+    plt.title('vz')
+    plt.subplot(7, 4, 8, rasterized=rasterized)
+    plt.scatter(-data_input[:, 4], -data_input[:, 5], s=0.1)
+    plt.title('vy-vz')
+    plt.xlabel('vy')
+    plt.ylabel('vz')
     
-    plt.subplot(5, 4, 9, rasterized=rasterized)
+    plt.subplot(7, 4, 9, rasterized=rasterized)
     plt.hist(data_input[:, 6], 50, density=True)
-    plt.title(name+': x2')
-    plt.subplot(5, 4, 10, rasterized=rasterized)
+    plt.title(name+': x21')
+    plt.subplot(7, 4, 10, rasterized=rasterized)
     plt.hist(data_input[:, 7], 50, density=True)
-    plt.title('y2')
-    plt.subplot(5, 4, 11, rasterized=rasterized)
+    plt.title('y21')
+    plt.subplot(7, 4, 11, rasterized=rasterized)
     plt.hist(data_input[:, 8], 50, density=True)
-    plt.title('z2')
-    plt.subplot(5, 4, 12, rasterized=rasterized)
+    plt.title('z21')
+    plt.subplot(7, 4, 12, rasterized=rasterized)
     plt.scatter(data_input[:, 7], data_input[:, 8], s=0.1)
-    plt.title('y2-z2')
-    plt.xlabel('y2')
-    plt.ylabel('z2')
+    plt.title('y21-z21')
+    plt.xlabel('y21')
+    plt.ylabel('z21')
     
-    plt.subplot(5, 4, 13, rasterized=rasterized)
+    plt.subplot(7, 4, 13, rasterized=rasterized)
     plt.hist(data_input[:, 9], 50, density=True)
-    plt.title('vx2')
-    plt.subplot(5, 4, 14, rasterized=rasterized)
+    plt.title('vx21')
+    plt.subplot(7, 4, 14, rasterized=rasterized)
     plt.hist(data_input[:, 10], 50, density=True)
-    plt.title('vy2')
-    plt.subplot(5, 4, 15, rasterized=rasterized)
+    plt.title('vy21')
+    plt.subplot(7, 4, 15, rasterized=rasterized)
     plt.hist(data_input[:, 11], 50, density=True)
-    plt.title('vz2')
-    plt.subplot(5, 4, 16, rasterized=rasterized)
+    plt.title('vz21')
+    plt.subplot(7, 4, 16, rasterized=rasterized)
     plt.scatter(data_input[:, 10], data_input[:, 11], s=0.1)
-    plt.title('vy2-vz2')
-    plt.xlabel('vy2')
-    plt.ylabel('vz2')
+    plt.title('vy21-vz21')
+    plt.xlabel('vy21')
+    plt.ylabel('vz21')
 
-    plt.subplot(5, 4, 17, rasterized=rasterized)
+    plt.subplot(7, 4, 17, rasterized=rasterized)
+    plt.hist(data_input[:, 12], 50, density=True)
+    plt.title(name+': x21')
+    plt.subplot(7, 4, 18, rasterized=rasterized)
+    plt.hist(data_input[:, 13], 50, density=True)
+    plt.title('y21')
+    plt.subplot(7, 4, 19, rasterized=rasterized)
+    plt.hist(data_input[:, 14], 50, density=True)
+    plt.title('z21')
+    plt.subplot(7, 4, 20, rasterized=rasterized)
+    plt.scatter(data_input[:, 13], data_input[:, 14], s=0.1)
+    plt.title('y21-z21')
+    plt.xlabel('y21')
+    plt.ylabel('z21')
+    
+    plt.subplot(7, 4, 21, rasterized=rasterized)
+    plt.hist(data_input[:, 15], 50, density=True)
+    plt.title('vx31')
+    plt.subplot(7, 4, 22, rasterized=rasterized)
+    plt.hist(data_input[:, 16], 50, density=True)
+    plt.title('vy31')
+    plt.subplot(7, 4, 23, rasterized=rasterized)
+    plt.hist(data_input[:, 17], 50, density=True)
+    plt.title('vz31')
+    plt.subplot(7, 4, 24, rasterized=rasterized)
+    plt.scatter(data_input[:, 16], data_input[:, 17], s=0.1)
+    plt.title('vy31-vz31')
+    plt.xlabel('vy31')
+    plt.ylabel('vz31')
+
+    plt.subplot(7, 4, 25, rasterized=rasterized)
     plt.hist(data_output[:, 0], 50, density=True)
     plt.title('fa_x')
-    plt.subplot(5, 4, 18, rasterized=rasterized)
+    plt.subplot(7, 4, 26, rasterized=rasterized)
     plt.hist(data_output[:, 1], 50, density=True)
     plt.title('fa_y')
-    plt.subplot(5, 4, 19, rasterized=rasterized)
+    plt.subplot(7, 4, 27, rasterized=rasterized)
     plt.hist(data_output[:, 2], 50, density=True)
     plt.title('fa_z')
-    plt.subplot(5, 4, 20, rasterized=rasterized)
+    plt.subplot(7, 4, 28, rasterized=rasterized)
     plt.plot(data_input[:, -1])
     plt.title('s')
     plt.tight_layout()

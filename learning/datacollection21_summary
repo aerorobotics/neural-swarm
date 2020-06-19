@@ -1,0 +1,66 @@
+Experiment for heterogeneous robots in swapping and random walk tasks (three robot interactions; 1 robot + ground).
+
+CF50, CF51, CF52: Crazyflie 2.1 (i.e., new IMU), unmodified, use defaultcf.txt for system id.
+CF101, CF102: Crazyflie 2.1 (i.e., new IMU), on parrot frame, use parrot_frame.txt for system id. 
+
+*************************************************************
+
+# (1) ./randomwalk_l; cf 102
+# ['01', '02', '03', '04', '05', '06', '07']
+# A few light touches but looks Okay
+
+# (2) ./randomwalk_ll; cf 101 & 102
+# ['00', '01', '02', '03', '04', '05']
+# A few touches -> need filtering for sure!
+
+# (3) ./randomwalk_s; cf 50
+# ['00', '01', '02', '03', '04', '05']
+# A few touches but looks Okay
+
+# (4) ./randomwalk_sl; cf 51 & 102
+# ['00', '01', '02', '03', '04']
+# No need for filtering
+
+# (5) ./randomwalk_sll; cf 51 & 101 & 102
+# ['00', '01', '02', '03', '04']
+# A few touches
+
+# (6) ./randomwalk_ss; cf 50 & 51
+# ['00', '01', '02', '03', '04']
+# No need for filtering
+
+# (7) ./randomwalk_ssl; cf 51 & 52 & 101
+# ['00', '01', '02', '03']
+# A few touches
+
+# (8) ./randomwalk_sss; cf 50 & 51 & 52
+# ['00', '01', '02', '03', '04', '05']
+# No touches
+
+# (9) ./swap_ll; cf 101 & 102
+# ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+
+# (10) ./swap_lll; cf 100 & 101 & 102
+# ['01', '03']
+# WARNING: DON'T USE IMU FOR CF 100
+
+# (11) ./swap_sl; cf 51 & 101
+# ['00', '01', '02', '03', '04', '05', '08', '09', '10', '11']
+
+# (12) ./swap_sll; cf 52 & 101 & 102
+# ['00', '01', '02', '03', '06']
+
+# (13) ./swap_ss; cf 50 & 51
+# ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+
+# (14) ./swap_ssl; cf 50 & 51 & 101
+# ['00', '01', '02', '05', '06', '07', '08', '09']
+
+# (15) ./swap_sss; cf 50 & 51 & 52
+# ['00', '01', '02', '03', '04', '05', '06', '07']
+
+# (16) ./takeoff_l; cf 102
+# ['00']
+
+# (17) ./takepff_s; cf 50 & 51 & 52
+# ['00']
