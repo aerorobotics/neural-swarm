@@ -1,5 +1,5 @@
 from utils import interpolation_cubic, data_extraction, Merge, Fa, get_data, hist, hist_all, set_generate, data_filter
-from vis_validation import vis
+from vis_validation import vis, vis_paper
 from nns import phi_Net, rho_Net
 import numpy as np
 import torch
@@ -12,16 +12,16 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-# output_name = "val_filter/epoch20_lip3_h20_f0d3"
-output_name = "test"
+output_name = "val_with21/epoch40_lip3_h20_f0d4_B256"
+# output_name = "test"
 lip = 3
-num_epochs = 10
+num_epochs = 40
 hidden_dim = 20
-batch_size = 128
+batch_size = 256
 rasterized = True # set to True, to rasterize the pictures in the PDF
 fa_type = 'fa_delay' # 'fa_imu', fa_num', 'fa_delay'
-x_threshold = 0.35 # threshold for data filtering
-y_threshold = 0.35 # threshold for data filtering
+x_threshold = 0.40 # threshold for data filtering
+y_threshold = 0.40 # threshold for data filtering
 g_threshold = [0.07, 0.085] # threshold for ground touching
 Filter = True
 always_GE = True
@@ -883,6 +883,7 @@ rho_S_net.load_state_dict(torch.load('../data/models/{}/rho_S.pth'.format(output
 phi_L_net.load_state_dict(torch.load('../data/models/{}/phi_L.pth'.format(output_name)))
 phi_S_net.load_state_dict(torch.load('../data/models/{}/phi_S.pth'.format(output_name)))
 vis(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized)
+vis_paper(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized)
 
 # Val of NNs
 # 0:Ge2L 1:Ge2S 2:L2L  3:S2S  4:L2S 5:S2L
