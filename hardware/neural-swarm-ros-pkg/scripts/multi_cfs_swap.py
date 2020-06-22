@@ -5,14 +5,14 @@ import numpy as np
 from pycrazyswarm import *
 import uav_trajectory
 
-# SS
-Ids = [50, 51]
-Heights = [0.6, 0.9]
-Radius = 0.3
+# # SS
+# Ids = [50, 51]
+# Heights = [0.6, 0.9]
+# Radius = 0.3
 
 # SL
 Ids = [50, 101]
-Heights = [0.6, 0.9]
+Heights = [0.6, 1.1]
 Radius = 0.3
 
 # # 3 agent case

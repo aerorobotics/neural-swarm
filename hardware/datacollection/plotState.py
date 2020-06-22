@@ -140,7 +140,8 @@ plotCurrent = 11
 plt.subplot(plotRows, plotCols, plotCurrent)
 # estimate Fa based on collected data:
 mass = 0.033
-# mass = 0.068
+if "cf100" in args.file or "cf101" in args.file or "cf102" in args.file:
+  mass = 0.067
 
 acc = np.column_stack((
   logData['stateEstimateZ.ax'] / 1000.0,

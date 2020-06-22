@@ -1,4 +1,4 @@
-generated_weights.c
+nn_generated_weights.c
 nn-export-test
 nnexport_wrap.c
 nnexport.py

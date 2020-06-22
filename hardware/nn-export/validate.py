@@ -57,28 +57,28 @@ def heatmap(ax, title, neighbors, cftype):
 
 # visualization
 fig, axs = plt.subplots(5, 4, figsize=(20,16), gridspec_kw={'hspace': 0.5})
-heatmap(axs[0,0], r'${F_a}_z$ (Ge2L)', [{'type': 'ground', 'pos': [0,0,0]}], 'large')
-heatmap(axs[0,1], r'${F_a}_z$ (Ge2S)', [{'type': 'ground', 'pos': [0,0,0]}], 'small')
+# heatmap(axs[0,0], r'${F_a}_z$ (Ge2L)', [{'type': 'ground', 'pos': [0,0,0]}], 'large')
+# heatmap(axs[0,1], r'${F_a}_z$ (Ge2S)', [{'type': 'ground', 'pos': [0,0,0]}], 'small')
 
-heatmap(axs[1,0], r'${F_a}_z$ (L2L)', [{'type': 'large', 'pos': [0,0,0.5]}], 'large')
+# heatmap(axs[1,0], r'${F_a}_z$ (L2L)', [{'type': 'large', 'pos': [0,0,0.5]}], 'large')
 heatmap(axs[1,1], r'${F_a}_z$ (S2S)', [{'type': 'small', 'pos': [0,0,0.5]}], 'small')
-heatmap(axs[1,2], r'${F_a}_z$ (L2S)', [{'type': 'large', 'pos': [0,0,0.5]}], 'small')
-heatmap(axs[1,3], r'${F_a}_z$ (S2L)', [{'type': 'small', 'pos': [0,0,0.5]}], 'large')
+# heatmap(axs[1,2], r'${F_a}_z$ (L2S)', [{'type': 'large', 'pos': [0,0,0.5]}], 'small')
+# heatmap(axs[1,3], r'${F_a}_z$ (S2L)', [{'type': 'small', 'pos': [0,0,0.5]}], 'large')
 
-heatmap(axs[2,0], r'${F_a}_z$ (GeL2L)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'large', 'pos': [0,0,0.5]}], 'large')
+# heatmap(axs[2,0], r'${F_a}_z$ (GeL2L)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'large', 'pos': [0,0,0.5]}], 'large')
 heatmap(axs[2,1], r'${F_a}_z$ (GeS2S)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'small', 'pos': [0,0,0.5]}], 'small')
-heatmap(axs[2,2], r'${F_a}_z$ (GeL2S)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'large', 'pos': [0,0,0.5]}], 'small')
-heatmap(axs[2,3], r'${F_a}_z$ (GeS2L)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'small', 'pos': [0,0,0.5]}], 'large')
+# heatmap(axs[2,2], r'${F_a}_z$ (GeL2S)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'large', 'pos': [0,0,0.5]}], 'small')
+# heatmap(axs[2,3], r'${F_a}_z$ (GeS2L)', [{'type': 'ground', 'pos': [0,0,0]}, {'type': 'small', 'pos': [0,0,0.5]}], 'large')
 
-heatmap(axs[3,0], r'${F_a}_z$ (SS2L)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'large')
-heatmap(axs[3,1], r'${F_a}_z$ (LL2L)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'large')
-heatmap(axs[3,2], r'${F_a}_z$ (LS2L)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'large')
-heatmap(axs[3,3], r'${F_a}_z$ (SL2L)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'large')
+# heatmap(axs[3,0], r'${F_a}_z$ (SS2L)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'large')
+# heatmap(axs[3,1], r'${F_a}_z$ (LL2L)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'large')
+# heatmap(axs[3,2], r'${F_a}_z$ (LS2L)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'large')
+# heatmap(axs[3,3], r'${F_a}_z$ (SL2L)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'large')
 
-heatmap(axs[4,0], r'${F_a}_z$ (SS2S)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'small')
-heatmap(axs[4,1], r'${F_a}_z$ (LL2S)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'small')
-heatmap(axs[4,2], r'${F_a}_z$ (LS2S)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'small')
-heatmap(axs[4,3], r'${F_a}_z$ (SL2S)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'small')
+# heatmap(axs[4,0], r'${F_a}_z$ (SS2S)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'small')
+# heatmap(axs[4,1], r'${F_a}_z$ (LL2S)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'small')
+# heatmap(axs[4,2], r'${F_a}_z$ (LS2S)', [{'type': 'large', 'pos': [0,-0.1,0.5]}, {'type': 'small', 'pos': [0,0.1,0.5]}], 'small')
+# heatmap(axs[4,3], r'${F_a}_z$ (SL2S)', [{'type': 'small', 'pos': [0,-0.1,0.5]}, {'type': 'large', 'pos': [0,0.1,0.5]}], 'small')
 
 
 plt.show()

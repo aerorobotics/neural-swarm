@@ -7,6 +7,7 @@ from pycrazyswarm import *
 import uav_trajectory
 
 Min_Height = 0.5
+# Min_Height = 0.7 # use this for LLL
 
 SwapTimes = [4,3,2]
 
@@ -16,8 +17,17 @@ if __name__ == "__main__":
     allcfs = swarm.allcfs
 
     # randomly shuffle enabled IDs
-    Ids = list(allcfs.crazyfliesById.keys())
-    random.shuffle(Ids)
+    ids_set = set(allcfs.crazyfliesById.keys())
+
+    # If we have an old CF 2.0, make sure it is always on top
+    if 100 in ids_set:
+        ids_set.remove(100)
+        Ids = list(ids_set)
+        random.shuffle(Ids)
+        Ids.append(100)
+    else:
+        Ids = list(ids_set)
+        random.shuffle(Ids)
 
     Heights = [Min_Height]
     for i in range(len(Ids)-1):
@@ -51,8 +61,8 @@ if __name__ == "__main__":
 
     allcfs.setParam("usd/logging", 1)
 
-    # disable ground effect in the NN computation
-    allcfs.setParam("ctrlFa/enableGround", 0)
+    # enable ground effect in the NN computation
+    allcfs.setParam("ctrlFa/enableGround", 1)
 
     # for useNN in [0, 2]:
     for useNN in [2]:

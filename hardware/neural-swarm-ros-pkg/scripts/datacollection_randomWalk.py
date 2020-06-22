@@ -7,17 +7,17 @@ import time
 from pycrazyswarm import *
 import uav_trajectory
 
-# for 2-robot data
-Offset = np.array([0.5,0,0.9])
-DX = 0.2
-DY = 0.2
-DZ = 0.6
-
-# # for 3-robot data
+# # for 2-robot data
 # Offset = np.array([0.5,0,0.9])
-# DX = 0.3
-# DY = 0.3
+# DX = 0.2
+# DY = 0.2
 # DZ = 0.6
+
+# for 3-robot data
+Offset = np.array([0.5,0,0.9])
+DX = 0.3
+DY = 0.3
+DZ = 0.6
 
 # # for ground effect data:
 # Offset = np.array([0.5,0,0.2])
@@ -61,8 +61,9 @@ if __name__ == "__main__":
     allcfs.takeoff(targetHeight=Offset[2], duration=3.5)
     timeHelper.sleep(3.5)
 
-    allcfs.setParam("ctrlFa/enableGround", 0) # disable ground effect computation
+    allcfs.setParam("ctrlFa/enableGround", 1) # enable ground effect computation
     allcfs.setParam("ctrlFa/enableNN", 2) # enable NN
+
     allcfs.setParam("planner/enAP", 1)
 
     allcfs.setParam("usd/logging", 1)

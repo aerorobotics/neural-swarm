@@ -19,6 +19,11 @@ crazyflies:
     initialPosition: [0.0, -0.5, 0.0]
     type: CF21SingleMarker
 
+  - id: 100
+    channel: 80
+    initialPosition: [0.5, 0.5, 0.0]
+    type: parrotFrameSingleMarker
+
   - id: 101
     channel: 80
     initialPosition: [0.5, 0.0, 0.0]
@@ -28,3 +33,8 @@ crazyflies:
     channel: 80
     initialPosition: [0.5, -0.5, 0.0]
     type: parrotFrameCF21SingleMarker
+
+  - id: 2
+    channel: 80
+    initialPosition: [-0.5, 0.0, 0.0]
+    type: defaultSingleMarker

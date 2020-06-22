@@ -45,8 +45,13 @@ if __name__ == '__main__':
 	parser.add_argument("input", help="input folder")
 	args = parser.parse_args()
 
-	with open('generated_weights.c', 'w') as gen_file:
+	with open('nn_generated_weights.c', 'w') as gen_file:
 		gen_file.write("/* GENERATED FILE - DO NOT EDIT */\n")
+
+		state_dict = torch.load('{}/phi_G.pth'.format(args.input))
+		NN_H = state_dict['fc4.bias'].shape[0]
+		gen_file.write("#define NN_H ({})\n".format(NN_H))
+
 		exportNet(gen_file, '{}/rho_L.pth'.format(args.input))
 		exportNet(gen_file, '{}/rho_S.pth'.format(args.input))
 		exportNet(gen_file, '{}/phi_L.pth'.format(args.input))
