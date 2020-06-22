@@ -2,6 +2,7 @@
 
 import numpy as np
 import random
+import yaml
 
 from pycrazyswarm import *
 import uav_trajectory
@@ -44,6 +45,10 @@ SwapTimes = [4,3]
 Radius = 0.25
 
 if __name__ == "__main__":
+
+    with open('validation_config.yaml', 'w') as f:
+        yaml.dump(configs, f)
+
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
