@@ -8,12 +8,12 @@ This process can be automated using `rclone`:
 - To pull the latest data use: 
 
 ```
-rclone sync box:neural-swarm data/ --dry-run
-rclone sync box:neural-swarm data/ -P
+rclone copy box:neural-swarm data/ --dry-run
+rclone copy box:neural-swarm data/ -P
 ```
 - To push the latest data use: 
 
 ```
-rclone sync data/ box:neural-swarm --dry-run
-rclone sync data/ box:neural-swarm -P
+rclone copy data/ box:neural-swarm --dry-run
+rclone copy data/ box:neural-swarm -P
 ```
