@@ -12,10 +12,10 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "val_with22/epoch20_lip3_h20_f0d4_B256"
+output_name = "val_with22/epoch40_lip3_h20_f0d4_B256"
 # output_name = "test"
 lip = 3
-num_epochs = 20
+num_epochs = 40
 hidden_dim = 20
 batch_size = 256
 rasterized = True # set to True, to rasterize the pictures in the PDF
