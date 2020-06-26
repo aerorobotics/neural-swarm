@@ -20,7 +20,7 @@ DY = 0.3
 DZ = 0.6
 
 # # for ground effect data:
-# Offset = np.array([0.5,0,0.2])
+# Offset = np.array([0.5,0,0.23])
 # DX = 0.2
 # DY = 0.2
 # DZ = 0.36

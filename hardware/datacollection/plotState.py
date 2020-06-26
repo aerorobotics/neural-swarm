@@ -81,12 +81,13 @@ state_rpy = np.array([quat2rpy(q) for q in quatState])
 
 # compute roll/pitch/yaw components of thrust mixing
 
-thrust_to_torque = 0.006
-arm_length = 0.046 # m
-yawpart = -0.25 * logData['motor.torquez'] / thrust_to_torque
-arm = 0.707106781 * arm_length
-rollpart = 0.25 / arm * logData['motor.torquex'];
-pitchpart = 0.25 / arm * logData['motor.torquey'];
+if 'motor.torquez' in logData:
+  thrust_to_torque = 0.006
+  arm_length = 0.046 # m
+  yawpart = -0.25 * logData['motor.torquez'] / thrust_to_torque
+  arm = 0.707106781 * arm_length
+  rollpart = 0.25 / arm * logData['motor.torquex'];
+  pitchpart = 0.25 / arm * logData['motor.torquey'];
 
 
 # set window background to white
@@ -196,15 +197,16 @@ plt.legend(loc=9, ncol=3, borderaxespad=0.)
 # plt.ylabel('Torque [Nm]'.format(axis))
 # plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
-plotCurrent = 12
-plt.subplot(plotRows, plotCols, plotCurrent)
-# plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
-# plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
-# plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
-plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
+if 'motor.torquez' in logData:
+  plotCurrent = 12
+  plt.subplot(plotRows, plotCols, plotCurrent)
+  # plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
+  # plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
+  # plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
+  plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
 
-plt.xlabel('Time [s]')
-plt.ylabel('Thrust mixing [g]'.format(axis))
-plt.legend(loc=9, ncol=3, borderaxespad=0.)
+  plt.xlabel('Time [s]')
+  plt.ylabel('Thrust mixing [g]'.format(axis))
+  plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 plt.show()

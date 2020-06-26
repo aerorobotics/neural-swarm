@@ -6,8 +6,8 @@ import random
 from pycrazyswarm import *
 import uav_trajectory
 
-Min_Height = 0.5
-# Min_Height = 0.7 # use this for LLL
+# Min_Height = 0.5
+Min_Height = 0.8 # use this for LLL
 
 SwapTimes = [4,3,2]
 

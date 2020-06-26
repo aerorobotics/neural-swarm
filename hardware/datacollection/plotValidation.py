@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     # compute Fa (considering motor delay)
     mass = 0.033
-    if cfid >= 100:
+    if cfid >= 100 and cfid < 200:
       mass = 0.067
 
     acc = np.column_stack((

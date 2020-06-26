@@ -38,3 +38,19 @@ crazyflies:
     channel: 80
     initialPosition: [-0.5, 0.0, 0.0]
     type: defaultSingleMarker
+
+  - id: 200
+    channel: 80
+    initialPosition: [-0.5, 0.5, 0.0]
+    type: defaultSingleMarker
+    firmwareParams:
+      pwm:
+        d00: 0.6034652836497831
+        d10: 0.07227137807568539
+        d01: -0.4832288487150109
+        d20: -0.0009261372585960825
+        d11: -0.0216219843334675
+
+        e00: -12.564182528108777
+        e10: 5.153254032178315
+        e01: 34.40420347673405
