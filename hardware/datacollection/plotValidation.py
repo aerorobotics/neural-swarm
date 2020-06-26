@@ -31,6 +31,9 @@ def quatdecompress(comp):
   q[i_largest] = math.sqrt(1.0 - sum_squares)
   return q
 
+def force2pwm(pwm, vbat):
+  return C_00 + C_10*pwm + C_01*vbat + C_20*pwm**2 + C_11*vbat*pwm
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("folder", type=str, help="folder with validation results")
@@ -68,9 +71,19 @@ if __name__ == '__main__':
 
 
     # compute Fa (considering motor delay)
-    mass = 0.033
+    mass = 0.032
+    C_00 = 11.093358483549203
+    C_10 = -39.08104165843915
+    C_01 = -9.525647087583181
+    C_20 = 20.573302305476638
+    C_11 = 38.42885066644033
     if cfid >= 100 and cfid < 200:
       mass = 0.067
+      C_00 = 44.10386631845999
+      C_10 = -122.51151800146272
+      C_01 = -36.18484254283743
+      C_20 = 53.10772568607133
+      C_11 = 107.6819263349139
 
     acc = np.column_stack((
       logData['stateEstimateZ.ax'] / 1000.0,
@@ -82,7 +95,14 @@ if __name__ == '__main__':
       logData['stateEstimateZ.vy'] / 1000.0,
       logData['stateEstimateZ.vz'] / 1000.0))
 
-    thrust = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+    # thrust_fw = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+    # Estimate thrust using PWM model (to account for motor saturation; output in grams)
+    force_pwm_1 = force2pwm(logData['pwm.m1_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+    force_pwm_2 = force2pwm(logData['pwm.m2_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+    force_pwm_3 = force2pwm(logData['pwm.m3_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+    force_pwm_4 = force2pwm(logData['pwm.m4_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+    thrust = (force_pwm_1 + force_pwm_2 + force_pwm_3 + force_pwm_4) / 1000 * 9.81
+
 
     thrust_delay = np.zeros(len(thrust))
     thrust_delay[0] = thrust[0]
