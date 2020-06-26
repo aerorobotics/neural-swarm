@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 # torch.set_default_tensor_type('torch.DoubleTensor')
+encoder = {'Ge2L':0, 'Ge2S':1, 'L2L':2, 'S2S':3, 'L2S':4, 'S2L':5, \
+           'SS2L':6, 'SL2L':7, 'LL2S':8, 'SL2S':9, 'SS2S':10, 'LL2L':11}
 
 def heatmap(phi_1_net, rho_net, phi_2_net=None, pos1=[0,0,0.5], vel1=[0,0,0], pos2=None, vel2=None, GE=False, pos3=None, phi_3_net=None, vel3=None):
     z_min = 0.0
@@ -491,28 +493,129 @@ def vis_paper(pp, phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasteri
     pp.savefig()
     plt.close()
 
-'''
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, typ):
+    L = len(data_input)
+    Fa = np.zeros(L)
+    for i in range(L):
+        with torch.no_grad():
+            inputs = torch.from_numpy(data_input[[i], :])
+            temp = encoder[typ]
+            if temp == encoder['Ge2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]))
+            elif temp == encoder['Ge2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]))
+            elif temp == encoder['L2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]) + phi_L_net(inputs[:, 6:12]))
+            elif temp == encoder['S2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]))
+            elif temp == encoder['L2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]) + phi_L_net(inputs[:, 6:12]))
+            elif temp == encoder['S2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]))
+            elif temp == encoder['SS2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]) + phi_S_net(inputs[:, 12:18]))
+            elif temp == encoder['SL2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]) + phi_L_net(inputs[:, 12:18]))
+            elif temp == encoder['LL2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]) + phi_L_net(inputs[:, 6:12]) + phi_L_net(inputs[:, 12:18]))
+            elif temp == encoder['SL2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]) + phi_L_net(inputs[:, 12:18]))
+            elif temp == encoder['SS2S']:
+                outputs = rho_S_net(phi_G_net(inputs[:, 2:6]) + phi_S_net(inputs[:, 6:12]) + phi_S_net(inputs[:, 12:18]))
+            elif temp == encoder['LL2L']:
+                outputs = rho_L_net(phi_G_net(inputs[:, 2:6]) + phi_L_net(inputs[:, 6:12]) + phi_L_net(inputs[:, 12:18]))
+            else:
+                print('wrong class', temp)
+            Fa[i] = outputs[0, 0].item()
+    return Fa
 
-h = 20
-phi_G_net = phi_Net(inputdim=4,hiddendim=h).to(device, dtype=torch.float32)
-phi_L_net = phi_Net(inputdim=6,hiddendim=h).to(device, dtype=torch.float32)
-phi_S_net = phi_Net(inputdim=6,hiddendim=h).to(device, dtype=torch.float32)
-rho_L_net = rho_Net(hiddendim=h).to(device, dtype=torch.float32)
-rho_S_net = rho_Net(hiddendim=h).to(device, dtype=torch.float32)
+def validation(phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input, data_output, ss, ee, name, typ, rasterized):
+    Fa_pred = Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, typ)
+    plt.figure(figsize=(12, 15))
+    plt.subplot(4, 1, 1, rasterized=rasterized)
+    # plt.plot(-data_input[ss:ee, :3])
+    # plt.legend(['x', 'y', 'z'])
+    plt.plot(-data_input[ss:ee, 2])
+    plt.legend('z')    
+    plt.grid()
+    plt.title('Validation: '+name)
+    plt.subplot(4, 1, 2, rasterized=rasterized)
+    plt.plot(data_input[ss:ee, 6:9])
+    plt.legend(['x21', 'y21', 'z21'])
+    plt.grid()
+    plt.subplot(4, 1, 3, rasterized=rasterized)
+    plt.plot(data_input[ss:ee, 12:15])
+    plt.legend(['x31', 'y31', 'z31'])
+    plt.grid()
+    plt.subplot(4, 1, 4, rasterized=rasterized)
+    plt.plot(data_output[ss:ee, 2])
+    plt.hlines(y=0, xmin=0, xmax=ee-ss, colors='r')
+    plt.plot(Fa_pred[ss:ee])
+    plt.legend(['fa_gt', 'fa_pred'])
+    plt.grid()
+    plt.show()
 
-path = '../data/models/val_with21/epoch10_lip3_h20_f0d35'
-phi_G_net.load_state_dict(torch.load(path + '/phi_G.pth'))
-rho_L_net.load_state_dict(torch.load(path + '/rho_L.pth'))
-rho_S_net.load_state_dict(torch.load(path + '/rho_S.pth'))
-phi_L_net.load_state_dict(torch.load(path + '/phi_L.pth'))
-phi_S_net.load_state_dict(torch.load(path + '/phi_S.pth'))
+# load NNs
+if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-phi_G_net.cpu()
-phi_L_net.cpu()
-phi_S_net.cpu()
-rho_L_net.cpu()
-rho_S_net.cpu()
+    h = 20
+    phi_G_net = phi_Net(inputdim=4,hiddendim=h).to(device, dtype=torch.float32)
+    phi_L_net = phi_Net(inputdim=6,hiddendim=h).to(device, dtype=torch.float32)
+    phi_S_net = phi_Net(inputdim=6,hiddendim=h).to(device, dtype=torch.float32)
+    rho_L_net = rho_Net(hiddendim=h).to(device, dtype=torch.float32)
+    rho_S_net = rho_Net(hiddendim=h).to(device, dtype=torch.float32)
 
-vis_paper(phi_G_net, phi_L_net, rho_L_net, phi_S_net, rho_S_net, rasterized=False)
-'''
+    path = '../data/models/val_with22/epoch40_lip3_h20_f0d35_B256/'
+    phi_G_net.load_state_dict(torch.load(path + 'phi_G.pth'))
+    rho_L_net.load_state_dict(torch.load(path + 'rho_L.pth'))
+    rho_S_net.load_state_dict(torch.load(path + 'rho_S.pth'))
+    phi_L_net.load_state_dict(torch.load(path + 'phi_L.pth'))
+    phi_S_net.load_state_dict(torch.load(path + 'phi_S.pth'))
+
+    phi_G_net.cpu()
+    phi_L_net.cpu()
+    phi_S_net.cpu()
+    rho_L_net.cpu()
+    rho_S_net.cpu()
+
+    from utils import interpolation_cubic, data_extraction, Fa, get_data
+
+    path = '../data/validation/epoch40_lip3_h20_f0d35_B256_3cfs/'
+    data_1 = data_extraction(path + 'cf52_00.csv')
+    data_2 = data_extraction(path + 'cf51_00.csv')
+    data_3 = data_extraction(path + 'cf50_00.csv')
+    typ = 'SS2S'
+
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    data_1 = interpolation_cubic(0, TF, data_1, ss=0, ee=-1)
+    data_2 = interpolation_cubic(0, TF, data_2, ss=0, ee=-1)
+    data_3 = interpolation_cubic(0, TF, data_3, ss=0, ee=-1)
+
+    # big CF
+    m = 67
+    g = 9.81
+    C_00 = 44.10386631845999
+    C_10 = -122.51151800146272
+    C_01 = -36.18484254283743
+    C_20 = 53.10772568607133
+    C_11 = 107.6819263349139
+
+    # small CF
+    m = 32
+    g = 9.81
+    C_00 = 11.093358483549203
+    C_10 = -39.08104165843915
+    C_01 = -9.525647087583181
+    C_20 = 20.573302305476638
+    C_11 = 38.42885066644033
+    data_1 = Fa(data_1, m, g, C_00, C_10, C_01, C_20, C_11)
+    data_2 = Fa(data_2, m, g, C_00, C_10, C_01, C_20, C_11)
+    data_3 = Fa(data_3, m, g, C_00, C_10, C_01, C_20, C_11)
+
+    data_input, data_output = get_data(D1=data_1, D2=data_2, D3=data_3, s=encoder[typ], typ='fa_delay', always_GE=True)
+
+    validation(phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input, data_output, ss=0, ee=-1, name=typ, typ=typ, rasterized=False)

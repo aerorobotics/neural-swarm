@@ -65,11 +65,11 @@ def vis(Data1, Data2=None, Data3=None, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=
         print("b: t0, t1 = " + str(Data2['time'][ss2]) + ', ' + str(Data2['time'][ee2]))
         print("c: t0, t1 = " + str(Data3['time'][ss3]) + ', ' + str(Data3['time'][ee3]))
 
-for index in ['00']:
-    Data_a = data_extraction('../data/training/datacollection21_06_16_2020/takeoff_s/cf52_' + index + '.csv')
-    print(np.min(Data_a['pos'][:, 2]))
-    #Data_b = data_extraction('../data/training/datacollection21_06_16_2020/swap_lll/cf101_' + index + '.csv')
-    #Data_c = data_extraction('../data/training/datacollection21_06_16_2020/swap_lll/cf102_' + index + '.csv')
-    vis(Data1=Data_a, Data2=None, Data3=None, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=-1)
+for index in ['00', '01', '02', '04', '05', '08']:
+    Data_a = data_extraction('../data/training/datacollection22_06_19_2020/swap_lll/cf100_' + index + '.csv')
+    # print(np.min(Data_a['pos'][:, 2]))
+    Data_b = data_extraction('../data/training/datacollection22_06_19_2020/swap_lll/cf101_' + index + '.csv')
+    Data_c = data_extraction('../data/training/datacollection22_06_19_2020/swap_lll/cf102_' + index + '.csv')
+    # vis(Data1=Data_a, Data2=None, Data3=None, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=-1)
     # vis(Data1=Data_a, Data2=Data_b, Data3=None, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=-1)
-    #vis(Data1=Data_a, Data2=Data_b, Data3=Data_c, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=-1)
+    vis(Data1=Data_a, Data2=Data_b, Data3=Data_c, ss1=0, ee1=-1, ss2=0, ee2=-1, ss3=0, ee3=-1)

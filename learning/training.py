@@ -12,16 +12,16 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "val_with21/epoch40_lip3_h20_f0d4_B256"
+output_name = "val_with23_wodelay/epoch40_lip3_h20_f0d4_B256"
 # output_name = "test"
 lip = 3
 num_epochs = 40
 hidden_dim = 20
 batch_size = 256
 rasterized = True # set to True, to rasterize the pictures in the PDF
-fa_type = 'fa_delay' # 'fa_imu', fa_num', 'fa_delay'
-x_threshold = 0.40 # threshold for data filtering
-y_threshold = 0.40 # threshold for data filtering
+fa_type = 'fa_imu' # 'fa_imu', fa_num', 'fa_delay'
+x_threshold = 0.4 # threshold for data filtering
+y_threshold = 0.4 # threshold for data filtering
 g_threshold = [0.07, 0.085] # threshold for ground touching
 Filter = True
 always_GE = True
@@ -456,7 +456,7 @@ for s in S:
     TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
     Data_LGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
 
-# (17) ./takepff_s; cf 50 & 51 & 52
+# (17) ./takeoff_s; cf 50 & 51 & 52
 # ['00']
 name = '../data/training/datacollection21_06_16_2020/takeoff_s/'
 S = ['00']
@@ -470,6 +470,169 @@ for s in S:
     data = data_extraction(name+'cf52_'+s+'.csv')
     TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
     Data_SGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+##### Data Collection 22 #####
+# (1) ./randomwalk_lll; cf 100 & 101 & 102
+name = '../data/training/datacollection22_06_19_2020/randomwalk_lll/'
+S = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09']
+for s in S:
+    data_1 = data_extraction(name+'cf100_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    Data_LLL_L1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LLL_L2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_LLL_L3_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+# (2) ./randomwalk_sl; cf 51 & 101
+name = '../data/training/datacollection22_06_19_2020/randomwalk_sl/'
+S = ['01', '02', '03', '04', '05', '06']
+for s in S:
+    data_1 = data_extraction(name+'cf51_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2)
+    Data_LS_S_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LS_L_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+
+# (3) ./randomwalk_sll; cf 51 & 101 & 102
+name = '../data/training/datacollection22_06_19_2020/randomwalk_sll/'
+S = ['04', '05', '06', '07', '08']
+for s in S:
+    data_1 = data_extraction(name+'cf51_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    Data_SLL_S_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_SLL_L1_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_SLL_L2_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+# (4) ./randomwalk_ssl; cf 51 & 52 & 102
+name = '../data/training/datacollection22_06_19_2020/randomwalk_ssl/'
+S = ['00', '01', '02', '03', '04']
+for s in S:
+    data_1 = data_extraction(name+'cf51_'+s+'.csv')
+    data_2 = data_extraction(name+'cf52_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    Data_SSL_S1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_SSL_S2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_SSL_L_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+# (5) ./swap_lll; cf 100 & 101 & 102
+name = '../data/training/datacollection22_06_19_2020/swap_lll/'
+S = ['00', '01', '02', '04', '05', '08']
+for s in S:
+    data_1 = data_extraction(name+'cf100_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.02
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.02
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.02
+    TF = min(TF_1, TF_2, TF_3)
+    Data_LLL_L1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LLL_L2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_LLL_L3_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+# (6) ./swap_sl; cf 51 & 101
+name = '../data/training/datacollection22_06_19_2020/swap_sl/'
+S = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+for s in S:
+    data_1 = data_extraction(name+'cf51_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2)
+    Data_LS_S_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LS_L_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+
+# (7) ./swap_sll; cf 50 & 101 & 102
+name = '../data/training/datacollection22_06_19_2020/swap_sll/'
+S = ['02', '03', '04', '05', '06', '07', '08', '09', '10']
+for s in S:
+    data_1 = data_extraction(name+'cf50_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    Data_SLL_S_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_SLL_L1_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_SLL_L2_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+# (8) ./swap_ssl; cf 51 & 52 & 102
+name = '../data/training/datacollection22_06_19_2020/swap_ssl/'
+S = ['00', '01', '02', '03']
+for s in S:
+    data_1 = data_extraction(name+'cf51_'+s+'.csv')
+    data_2 = data_extraction(name+'cf52_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.01
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.01
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.01
+    TF = min(TF_1, TF_2, TF_3)
+    Data_SSL_S1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_SSL_S2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_SSL_L_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+##### Datacollection23 #####
+# (1) ./randomwalk_l_1; cf 101
+name = '../data/training/datacollection23_06_23_2020/randomwalk_l_1/'
+S = ['00', '01', '02', '03', '04', '05', '06']
+for s in S:
+    data = data_extraction(name+'cf101_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_LGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (2) ./randomwalk_l_2; cf 102
+name = '../data/training/datacollection23_06_23_2020/randomwalk_l_2/'
+S = ['00', '01', '02', '03', '04', '05', '06']
+for s in S:
+    data = data_extraction(name+'cf102_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_LGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (3) ./randomwalk_s_1; cf 52
+name = '../data/training/datacollection23_06_23_2020/randomwalk_s_1/'
+S = ['00', '01', '02', '03', '04', '05']
+for s in S:
+    data = data_extraction(name+'cf52_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_SGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (4) ./randomwalk_s_2; cf 51
+name = '../data/training/datacollection23_06_23_2020/randomwalk_s_2/'
+S = ['00', '01', '02', '03', '04', '05']
+for s in S:
+    data = data_extraction(name+'cf51_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_SGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (5) ./swap_lll; cf 100 & 101 & 102
+name = '../data/training/datacollection23_06_23_2020/swap_lll/'
+S = ['00', '02', '03', '04', '05', '06', '07', '09']
+for s in S:
+    data_1 = data_extraction(name+'cf100_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.02
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.02
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.02
+    TF = min(TF_1, TF_2, TF_3)
+    Data_LLL_L1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LLL_L2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_LLL_L3_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
 
 
 ##### Part II: Data merge #####
@@ -591,11 +754,14 @@ data_input_SS2S = np.vstack((data_input_SS2S_a, data_input_SS2S_b, data_input_SS
 data_output_SS2S = np.vstack((data_output_SS2S_a, data_output_SS2S_b, data_output_SS2S_c))
 print('SS2S:', data_input_SS2S.shape, data_output_SS2S.shape)
 
-data_input_LL2L_a, data_output_LL2L_a = get_data(D1=Data_LLL_L1, D2=Data_LLL_L2, D3=Data_LLL_L3, s=encoder['LL2L'], typ=fa_type, always_GE=always_GE)
+# CF 100 HAS BAD FA!
+# data_input_LL2L_a, data_output_LL2L_a = get_data(D1=Data_LLL_L1, D2=Data_LLL_L2, D3=Data_LLL_L3, s=encoder['LL2L'], typ=fa_type, always_GE=always_GE)
 data_input_LL2L_b, data_output_LL2L_b = get_data(D1=Data_LLL_L2, D2=Data_LLL_L1, D3=Data_LLL_L3, s=encoder['LL2L'], typ=fa_type, always_GE=always_GE)
 data_input_LL2L_c, data_output_LL2L_c = get_data(D1=Data_LLL_L3, D2=Data_LLL_L1, D3=Data_LLL_L2, s=encoder['LL2L'], typ=fa_type, always_GE=always_GE)
-data_input_LL2L = np.vstack((data_input_LL2L_a, data_input_LL2L_b, data_input_LL2L_c))
-data_output_LL2L = np.vstack((data_output_LL2L_a, data_output_LL2L_b, data_output_LL2L_c))
+# data_input_LL2L = np.vstack((data_input_LL2L_a, data_input_LL2L_b, data_input_LL2L_c))
+# data_output_LL2L = np.vstack((data_output_LL2L_a, data_output_LL2L_b, data_output_LL2L_c))
+data_input_LL2L = np.vstack((data_input_LL2L_b, data_input_LL2L_c))
+data_output_LL2L = np.vstack((data_output_LL2L_b, data_output_LL2L_c))
 print('LL2L:', data_input_LL2L.shape, data_output_LL2L.shape)
 
 Data_input_all = [data_input_Ge2L, data_input_Ge2S, data_input_L2L, data_input_S2S, data_input_L2S, data_input_S2L, \
@@ -666,15 +832,13 @@ def set_loss(set, criterion, rho_net, phi_1_net, phi_2_net=None, phi_3_net=None)
                 loss = criterion(rho_net(phi_1_net(inputs[:, 2:6]) + phi_2_net(inputs[:, 6:12])), label)
             else:
                 loss = criterion(rho_net(phi_1_net(inputs[:, 2:6]) + phi_2_net(inputs[:, 6:12]) + phi_2_net(inputs[:, 12:18])), label)
-        '''
-        if phi_2_net is None:
-            if GE:
-                loss = criterion(rho_net(phi_1_net(inputs[:, 2:6])), label)
-            else:
-                loss = criterion(rho_net(phi_1_net(inputs[:, :6])), label)
-        else:
-            loss = criterion(rho_net(phi_1_net(inputs[:, :6]) + phi_2_net(inputs[:, 6:12])), label)
-        '''
+        # if phi_2_net is None:
+        #     if GE:
+        #         loss = criterion(rho_net(phi_1_net(inputs[:, 2:6])), label)
+        #     else:
+        #         loss = criterion(rho_net(phi_1_net(inputs[:, :6])), label)
+        # else:
+        #     loss = criterion(rho_net(phi_1_net(inputs[:, :6]) + phi_2_net(inputs[:, 6:12])), label)
     return loss.item()
 
 # Loss before training
@@ -928,13 +1092,21 @@ def Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_
 # Val of NNs
 def validation(pp, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net, data_input, data_output, ss, ee, name):
     Fa_pred = Fa_prediction(data_input, phi_G_net, phi_S_net, phi_L_net, rho_S_net, rho_L_net)
-    plt.figure(figsize=(12, 9))
-    plt.subplot(2, 1, 1, rasterized=rasterized)
-    plt.plot(data_input[:, :3])
-    plt.legend(['dx', 'dy', 'dz'])
+    plt.figure(figsize=(12, 15))
+    plt.subplot(4, 1, 1, rasterized=rasterized)
+    plt.plot(-data_input[:, :3])
+    plt.legend(['x', 'y', 'z'])
     plt.grid()
     plt.title('Validation: '+name)
-    plt.subplot(2, 1, 2, rasterized=rasterized)
+    plt.subplot(4, 1, 2, rasterized=rasterized)
+    plt.plot(data_input[:, 6:9])
+    plt.legend(['x21', 'y21', 'z21'])
+    plt.grid()
+    plt.subplot(4, 1, 3, rasterized=rasterized)
+    plt.plot(data_input[:, 12:15])
+    plt.legend(['x31', 'y31', 'z31'])
+    plt.grid()
+    plt.subplot(4, 1, 4, rasterized=rasterized)
     plt.plot(data_output[:, 2])
     plt.hlines(y=0, xmin=0, xmax=ee-ss, colors='r')
     plt.plot(Fa_pred)
