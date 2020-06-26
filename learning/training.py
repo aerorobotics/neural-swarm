@@ -12,16 +12,16 @@ import os
 from collections import defaultdict
 
 # output will be written to ../data/models/<output_name> folder
-output_name = "val_with22/epoch40_lip3_h20_f0d4_B256"
+output_name = "val_with23_wodelay/epoch40_lip3_h20_f0d4_B256"
 # output_name = "test"
 lip = 3
 num_epochs = 40
 hidden_dim = 20
 batch_size = 256
 rasterized = True # set to True, to rasterize the pictures in the PDF
-fa_type = 'fa_delay' # 'fa_imu', fa_num', 'fa_delay'
-x_threshold = 0.40 # threshold for data filtering
-y_threshold = 0.40 # threshold for data filtering
+fa_type = 'fa_imu' # 'fa_imu', fa_num', 'fa_delay'
+x_threshold = 0.4 # threshold for data filtering
+y_threshold = 0.4 # threshold for data filtering
 g_threshold = [0.07, 0.085] # threshold for ground touching
 Filter = True
 always_GE = True
@@ -585,6 +585,54 @@ for s in S:
     Data_SSL_S1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
     Data_SSL_S2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
     Data_SSL_L_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
+
+##### Datacollection23 #####
+# (1) ./randomwalk_l_1; cf 101
+name = '../data/training/datacollection23_06_23_2020/randomwalk_l_1/'
+S = ['00', '01', '02', '03', '04', '05', '06']
+for s in S:
+    data = data_extraction(name+'cf101_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_LGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (2) ./randomwalk_l_2; cf 102
+name = '../data/training/datacollection23_06_23_2020/randomwalk_l_2/'
+S = ['00', '01', '02', '03', '04', '05', '06']
+for s in S:
+    data = data_extraction(name+'cf102_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_LGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (3) ./randomwalk_s_1; cf 52
+name = '../data/training/datacollection23_06_23_2020/randomwalk_s_1/'
+S = ['00', '01', '02', '03', '04', '05']
+for s in S:
+    data = data_extraction(name+'cf52_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_SGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (4) ./randomwalk_s_2; cf 51
+name = '../data/training/datacollection23_06_23_2020/randomwalk_s_2/'
+S = ['00', '01', '02', '03', '04', '05']
+for s in S:
+    data = data_extraction(name+'cf51_'+s+'.csv')
+    TF = np.floor(data['time'][-1]*100)/100.0 - 0.01
+    Data_SGe_list.append(interpolation_cubic(0, TF, data, ss=0, ee=-1))
+
+# (5) ./swap_lll; cf 100 & 101 & 102
+name = '../data/training/datacollection23_06_23_2020/swap_lll/'
+S = ['00', '02', '03', '04', '05', '06', '07', '09']
+for s in S:
+    data_1 = data_extraction(name+'cf100_'+s+'.csv')
+    data_2 = data_extraction(name+'cf101_'+s+'.csv')
+    data_3 = data_extraction(name+'cf102_'+s+'.csv')
+    TF_1 = np.floor(data_1['time'][-1]*100)/100.0 - 0.02
+    TF_2 = np.floor(data_2['time'][-1]*100)/100.0 - 0.02
+    TF_3 = np.floor(data_3['time'][-1]*100)/100.0 - 0.02
+    TF = min(TF_1, TF_2, TF_3)
+    Data_LLL_L1_list.append(interpolation_cubic(0, TF, data_1, ss=0, ee=-1))
+    Data_LLL_L2_list.append(interpolation_cubic(0, TF, data_2, ss=0, ee=-1))
+    Data_LLL_L3_list.append(interpolation_cubic(0, TF, data_3, ss=0, ee=-1))
 
 
 ##### Part II: Data merge #####

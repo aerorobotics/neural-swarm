@@ -263,7 +263,9 @@ def data_filter(data_input, data_output, x_threshold=0.4, y_threshold=0.4, g_thr
             data_output[i, 2] = 10001.0
         else:
             if np.abs(data_output[i, 2]) > 50:
-                data_output[i, 2] = 10001.0            
+                data_output[i, 2] = 10001.0
+            if data_output[i, 2] > 35 and -data_input[i, 2] > 0.25: # filter wierd positive Fa
+                data_output[i, 2] = 10001.0         
     return data_input[data_output[:, 2] < 10000], data_output[data_output[:, 2] < 10000], num_g/L, num_xy/L
 
 # Histogram visualization of numpy data input and output pair
