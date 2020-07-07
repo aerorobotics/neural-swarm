@@ -110,6 +110,9 @@ crazyflieTypes:
         Kpos_Iz: 10 #20
         Kpos_I_limit: 0.1
         Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
   CF21SingleMarker:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -190,6 +193,9 @@ crazyflieTypes:
         Kpos_Iz: 10 #20
         Kpos_I_limit: 0.1
         Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
   parrotFrame:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -334,6 +340,9 @@ crazyflieTypes:
         Kpos_Iz: 10
         Kpos_I_limit: 0.1
         Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
   parrotFrameCF21SingleMarker:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -417,6 +426,9 @@ crazyflieTypes:
         Kpos_Iz: 10
         Kpos_I_limit: 0.1
         Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
   medium:
     bigQuad: True
     batteryVoltageWarning: 7.6  # V
