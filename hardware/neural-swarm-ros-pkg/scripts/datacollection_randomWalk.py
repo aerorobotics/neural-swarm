@@ -3,18 +3,21 @@
 import numpy as np
 import threading
 import time
+import colorsys
 
 from pycrazyswarm import *
 import uav_trajectory
 
 # # for 2-robot data
-# Offset = np.array([0.5,0,0.9])
+# Offset = np.array([0.5,0,0.9]) # for data collection
+# Offset = np.array([-0.3,0,0.9]) # for video
 # DX = 0.2
 # DY = 0.2
 # DZ = 0.6
 
 # for 3-robot data
-Offset = np.array([0.5,0,0.9])
+Offset = np.array([0.5,0,0.9]) # for data collection
+Offset = np.array([-0.3,0,0.9]) # for video
 DX = 0.3
 DY = 0.3
 DZ = 0.6
@@ -27,7 +30,8 @@ DZ = 0.6
 
 
 SPEED = 0.3 #m/s
-DURATION = 60
+# DURATION = 60 # for data collection
+DURATION = 20 # for video
 
 def threadsafeSleep(duration):
     startTime = timeHelper.time()
@@ -57,6 +61,15 @@ if __name__ == "__main__":
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
+
+    # Set LED ring color for active CFs
+    hues = np.linspace(0,1.0,len(allcfs.crazyflies),endpoint=False)
+    for cf, hue, in zip(allcfs.crazyflies, hues):
+        r,g,b = colorsys.hsv_to_rgb(hue, 0.9, 1.0)
+        cf.setParam("ring/effect", 7) # solid color
+        cf.setParam("ring/solidRed", int(r * 255))
+        cf.setParam("ring/solidGreen", int(g * 255))
+        cf.setParam("ring/solidBlue", int(b * 255))
 
     allcfs.takeoff(targetHeight=Offset[2], duration=3.5)
     timeHelper.sleep(3.5)
@@ -93,6 +106,7 @@ if __name__ == "__main__":
 
     allcfs.setParam("usd/logging", 0)
     allcfs.setParam("planner/enAP", 0)
+    allcfs.setParam("ring/effect", 0) # disable LED ring
 
     # allcfs.setParam("planner/enableAP", 0)
 

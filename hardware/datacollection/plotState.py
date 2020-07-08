@@ -155,6 +155,13 @@ if "cf100" in args.file or "cf101" in args.file or "cf102" in args.file:
   C_01 = -36.18484254283743
   C_20 = 53.10772568607133
   C_11 = 107.6819263349139
+if "cf200" in args.file:
+  mass = 0.032
+  C_00 = 14.639083451431064
+  C_10 = -49.58925346670507
+  C_01 = -15.11436310327852
+  C_20 = 25.806716788604707
+  C_11 = 54.00127729445893
 
 acc = np.column_stack((
   logData['stateEstimateZ.ax'] / 1000.0,
@@ -207,6 +214,7 @@ plt.ylabel('Fa')
 plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 
+# plotCurrent = 12
 # plt.subplot(plotRows, plotCols, plotCurrent)
 # plt.plot(time, logData['motor.torquex'], '-', label='x')
 # plt.plot(time, logData['motor.torquey'], '-', label='y')
@@ -215,16 +223,22 @@ plt.legend(loc=9, ncol=3, borderaxespad=0.)
 # plt.ylabel('Torque [Nm]'.format(axis))
 # plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
-if 'motor.torquez' in logData:
-  plotCurrent = 12
-  plt.subplot(plotRows, plotCols, plotCurrent)
-  # plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
-  # plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
-  # plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
-  plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
+plotCurrent = 12
+plt.subplot(plotRows, plotCols, plotCurrent)
+plt.plot(time, logData['motor.thrust'], '-')
+plt.xlabel('Time [s]')
+plt.ylabel('Thrust [N]')
 
-  plt.xlabel('Time [s]')
-  plt.ylabel('Thrust mixing [g]'.format(axis))
-  plt.legend(loc=9, ncol=3, borderaxespad=0.)
+# if 'motor.torquez' in logData:
+#   plotCurrent = 12
+#   plt.subplot(plotRows, plotCols, plotCurrent)
+#   # plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
+#   # plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
+#   # plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
+#   plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
+
+#   plt.xlabel('Time [s]')
+#   plt.ylabel('Thrust mixing [g]'.format(axis))
+#   plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 plt.show()

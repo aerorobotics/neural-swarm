@@ -46,7 +46,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	with open('nn_generated_weights.c', 'w') as gen_file:
-		gen_file.write("/* GENERATED FILE - DO NOT EDIT */\n")
+		gen_file.write("/* GENERATED FILE (using: {}) - DO NOT EDIT */\n".format(args.input))
 
 		state_dict = torch.load('{}/phi_G.pth'.format(args.input))
 		NN_H = state_dict['fc4.bias'].shape[0]
