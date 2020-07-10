@@ -190,11 +190,10 @@ def compute_stats(robots, dt):
     max_z_errors.append(max_z_error)
     max_z_errors[0] = max(max_z_errors[0], max_z_error)
 
-    # compute control effort without gravity to minimize effect on total flight time on metric
-    control_effort = np.sum(np.linalg.norm(robot.U_rollout - torch.tensor([0,robot.g]), axis=1)) * dt
+    control_effort = np.sum(np.linalg.norm(robot.U_rollout, axis=1)) * dt
     control_efforts.append(control_effort)
     control_efforts[0] += control_effort
-    stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout - torch.tensor([0,robot.g]), axis=1))
+    stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout, axis=1))
 
   stats['tracking_errors'] = tracking_errors
   stats['max_z_errors'] = max_z_errors
@@ -447,8 +446,7 @@ def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, 
 
       pickle.dump( robots, open( "treesearch.p", "wb" ) )
     else:
-      # robots = pickle.load( open( "treesearch.p", "rb" ) )
-      robots = pickle.load( open( "/home/whoenig/projects/caltech/neural-swarm/data/planning/case_LL_iter_1_NN.pdf.p", "rb" ) )
+      robots = pickle.load( open( "treesearch.p", "rb" ) )
 
     # vis_pdf(robots, "output.pdf", use3D=use3D)
     # exit()

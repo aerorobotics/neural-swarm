@@ -50,9 +50,9 @@ class RobotCrazyFlie2D:
     self.xy_filter = xy_filter
 
     # controller
-    self.kp = 16
-    self.kd = 10
-    self.ki = 50.0
+    self.kp = 8
+    self.kd = 5
+    self.ki = 25.0
     self.i_part = torch.zeros(2)
     self.i_limit = 1e-1
 

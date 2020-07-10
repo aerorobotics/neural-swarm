@@ -121,9 +121,9 @@ if __name__ == '__main__':
   for k, stats in enumerate(results):
     tracking_errors[k] = stats['tracking_errors'][0]
     max_z_errors[k] = stats['max_z_errors'][0]
-    control_efforts[k] = stats['control_efforts'][0]
+    # control_efforts[k] = stats['control_efforts'][0]
     # tracking_errors[k] = stats['tracking_errors_avg']
-    # control_efforts[k] = stats['control_efforts_avg']
+    control_efforts[k] = stats['control_efforts_avg']
 
   fig, ax = plt.subplots(3, len(cases), sharey='row', squeeze=False)
   for c, case in enumerate(cases):
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     ax[2,c].grid(True)
 
   ax[0,0].set_ylabel('Tracking error')
-  ax[1,0].set_ylabel('Max Z Error')
-  ax[2,0].set_ylabel('Control effort')
+  ax[1,0].set_ylabel('Max z error')
+  ax[2,0].set_ylabel('Avg. control effort')
 
   plt.show()
