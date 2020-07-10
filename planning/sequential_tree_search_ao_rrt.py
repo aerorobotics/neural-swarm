@@ -9,9 +9,9 @@ def state_to_index(x):
   else:
     velIdx = x.shape[1] // 2
   if velIdx == 2:
-    return x * np.array([1,1,0.05,0.05])
+    return x * np.array([1,1,0.5,0.5])
   else:
-    return x * np.array([1,1,1,0.05,0.05,0.05])
+    return x * np.array([1,1,1,0.5,0.5,0.5])
 
 # def state_from_index(x):
 #   return x / np.array([1,1,0.05,0.05])
@@ -19,6 +19,7 @@ def state_to_index(x):
 def state_valid(robot, x, data_neighbors):
   # check if within the space
   if (x < np.array(robot.x_min)).any() or (x > np.array(robot.x_max)).any():
+    # print("not valid1: ", x)
     return False
 
   # check for collisions with neighbors
@@ -26,6 +27,7 @@ def state_valid(robot, x, data_neighbors):
   for cftype_neighbor, x_neighbor in data_neighbors:
     dist = np.linalg.norm(x[0:velIdx] - x_neighbor.numpy()[0:velIdx])
     if dist < robot.min_distance(cftype_neighbor):
+      # print("not valid2", x)
       return False
 
   return True
@@ -90,6 +92,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       # randomly sample a state
       if attempt % sample_goal_iter == 0:
+        # print(attempt, i)
         # x = xf
         idx = best_i
       else:
@@ -103,7 +106,8 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
 
       # perf improvement: do not attempt to expand nodes that seem to be on the border of the statespace
-      if expand_attempts[idx] > 10 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+      if expand_attempts[idx] > 100 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+        # print("UPS", attempt, idx, states[idx])
         # idx = np.random.randint(0, i)
         continue
 
@@ -183,7 +187,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       if best_distance < 0.1:
         idx = best_i
-        print("Found solution!", idx, cost[idx])
+        print("Found solution!", attempt, idx, cost[idx])
         best_cost = cost[idx]
         cost_limit = 0.9 * cost[idx]
 

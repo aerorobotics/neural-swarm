@@ -12,79 +12,79 @@ if __name__ == '__main__':
   plt.rcParams.update({'font.size': 12})
   plt.rcParams['lines.linewidth'] = 4
 
-  max_workers = 10
+  max_workers = 24
 
-  repeats = 1
+  repeats = 5
 
   cases = [
-    # {
-    #   'name': "Small/Large Swap",
-    #   'shortname': "SL",
-    #   'use3D': False,
-    #   'robots': [
-    #     {
-    #       'type': 'small',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #     {
-    #       'type': 'large',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #   ]
-    # },
-    # {
-    #   'name': "Small/Small Swap",
-    #   'shortname': "SS",
-    #   'use3D': False,
-    #   'robots': [
-    #     {
-    #       'type': 'small',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #     {
-    #       'type': 'small',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #   ]
-    # },
-    # {
-    #   'name': "Large/Large Swap",
-    #   'shortname': "LL",
-    #   'use3D': False,
-    #   'robots': [
-    #     {
-    #       'type': 'large',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #     {
-    #       'type': 'large',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #     },
-    #   ]
-    # },
     {
-      'name': "Small/Large Swap (3D)",
-      'shortname': "SL3D",
-      'use3D': True,
+      'name': "Small/Large Swap",
+      'shortname': "SL",
+      'use3D': False,
       'robots': [
         {
           'type': 'small',
-          'x0': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
         },
         {
           'type': 'large',
-          'x0': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
         },
       ]
     },
+    {
+      'name': "Small/Small Swap",
+      'shortname': "SS",
+      'use3D': False,
+      'robots': [
+        {
+          'type': 'small',
+          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'small',
+          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+        },
+      ]
+    },
+    {
+      'name': "Large/Large Swap",
+      'shortname': "LL",
+      'use3D': False,
+      'robots': [
+        {
+          'type': 'large',
+          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+        },
+      ]
+    },
+    # {
+    #   'name': "Small/Large Swap (3D)",
+    #   'shortname': "SL3D",
+    #   'use3D': True,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
   ]
 
   if True:
@@ -102,7 +102,12 @@ if __name__ == '__main__':
             file_names.append("../data/planning/case_{}_iter_{}.pdf".format(case['shortname'], j))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers) as executor:
-      results = executor.map(sequential_planning, useNNs, [ri['robots'] for ri in robot_infos], file_names, [ri['use3D'] for ri in robot_infos])
+      results = executor.map(sequential_planning, 
+        useNNs,
+        [ri['robots'] for ri in robot_infos],
+        file_names,
+        [ri['use3D'] for ri in robot_infos])#,
+        # repeat(200))
       results = list(results)
 
     pickle.dump( results, open( "runner.p", "wb" ) )

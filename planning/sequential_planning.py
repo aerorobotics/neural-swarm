@@ -1,6 +1,7 @@
 from robots import RobotCrazyFlie2D, RobotCrazyFlie3D
 # from sequential_tree_search import tree_search
 from sequential_tree_search_ao_rrt import tree_search
+# from sequential_tree_search_ao_rrt_scp import tree_search
 import torch
 import math
 from sequential_scp import scp_min_xf, scp
@@ -180,19 +181,20 @@ def compute_stats(robots, dt):
   stats['control_efforts_avg'] = 0
   for k, robot in enumerate(robots):
     velIdx = robot.X_rollout.shape[1] // 2
-    tracking_error = np.sum(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:velIdx] - robot.X_des[:,0:velIdx], axis=1))
+    tracking_error = np.sum(np.linalg.norm(robot.X_rollout[:,0:velIdx] - robot.X_des2[:,0:velIdx], axis=1))
     tracking_errors.append(tracking_error)
     tracking_errors[0] += tracking_error
-    stats['tracking_errors_avg'] += np.mean(np.linalg.norm(robot.X_rollout[0:robot.X_des.shape[0],0:velIdx] - robot.X_des[:,0:velIdx], axis=1))
+    stats['tracking_errors_avg'] += np.mean(np.linalg.norm(robot.X_rollout[:,0:velIdx] - robot.X_des2[:,0:velIdx], axis=1))
 
-    max_z_error = torch.max(np.abs(robot.X_rollout[0:robot.X_des.shape[0],velIdx-1] - robot.X_des[:,velIdx-1]))
+    max_z_error = torch.max(np.abs(robot.X_rollout[:,velIdx-1] - robot.X_des2[:,velIdx-1]))
     max_z_errors.append(max_z_error)
     max_z_errors[0] = max(max_z_errors[0], max_z_error)
 
-    control_effort = np.sum(np.linalg.norm(robot.U_rollout, axis=1)) * dt
+    # compute control effort without gravity to minimize effect on total flight time on metric
+    control_effort = np.sum(np.linalg.norm(robot.U_rollout - torch.tensor([0,robot.g]), axis=1)) * dt
     control_efforts.append(control_effort)
     control_efforts[0] += control_effort
-    stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout, axis=1))
+    stats['control_efforts_avg'] += np.mean(np.linalg.norm(robot.U_rollout - torch.tensor([0,robot.g]), axis=1))
 
   stats['tracking_errors'] = tracking_errors
   stats['max_z_errors'] = max_z_errors
@@ -202,7 +204,7 @@ def compute_stats(robots, dt):
 
   return stats
 
-def vis_pdf(robots, stats, name='output.pdf', use3D=False):
+def vis_pdf(robots, stats, name='output.pdf', use3D=False, text=None):
   # scp_epoch = len(X)
 
   pp = PdfPages(name)
@@ -217,10 +219,10 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
     ax0 = fig.add_subplot(2,1,1,projection='3d')
     ax1 = fig.add_subplot(2,1,2)
     for k, robot in enumerate(robots):
-      X_des = np.array(robot.X_des)
+      X_des2 = np.array(robot.X_des2)
       X_rollout = np.array(robot.X_rollout)
       Fa_rollout = np.array(robot.Fa_rollout)
-      line = ax0.plot3D(X_des[:,0], X_des[:,1], X_des[:,2], linestyle='--', label="cf{} des pos".format(k))
+      line = ax0.plot3D(X_des2[:,0], X_des2[:,1], X_des2[:,2], linestyle='--', label="cf{} des pos".format(k))
       ax0.plot(X_rollout[:,0], X_rollout[:,1], X_rollout[:,2], line[0].get_color(), label="cf{} tracking".format(k))
       ax1.plot(Fa_rollout, line[0].get_color(), label="cf{} Fa".format(k))
     set_axes_equal(ax0)
@@ -234,9 +236,9 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     for k, robot in enumerate(robots):
-      X_des = np.array(robot.X_des)
+      X_des2 = np.array(robot.X_des2)
       X_rollout = np.array(robot.X_rollout)
-      line = ax.plot3D(X_des[:,3], X_des[:,4], X_des[:,5], linestyle='--', label="cf{} des vel".format(k))
+      line = ax.plot3D(X_des2[:,3], X_des2[:,4], X_des2[:,5], linestyle='--', label="cf{} des vel".format(k))
       ax.plot(X_rollout[:,3], X_rollout[:,4], X_rollout[:,5], line[0].get_color(), label="cf{} tracking".format(k))
     set_axes_equal(ax)
     ax.legend()
@@ -247,7 +249,7 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
   else:
     fig, ax = plt.subplots(2, 1)
     for k, robot in enumerate(robots):
-      line = ax[0].plot(robot.X_des[:,0], robot.X_des[:,1], linestyle='--', label="cf{} des pos".format(k))
+      line = ax[0].plot(robot.X_des2[:,0], robot.X_des2[:,1], linestyle='--', label="cf{} des pos".format(k))
       ax[0].plot(robot.X_rollout[:,0], robot.X_rollout[:,1], line[0].get_color(), label="cf{} tracking".format(k))
       ax[1].plot(robot.Fa_rollout, line[0].get_color(), label="cf{} Fa".format(k))
     ax[0].legend()
@@ -259,7 +261,7 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
 
     fig, ax = plt.subplots()
     for k, robot in enumerate(robots):
-      line = ax.plot(robot.X_des[:,2], robot.X_des[:,3], linestyle='--', label="cf{} des vel".format(k))
+      line = ax.plot(robot.X_des2[:,2], robot.X_des2[:,3], linestyle='--', label="cf{} des vel".format(k))
       ax.plot(robot.X_rollout[:,2], robot.X_rollout[:,3], line[0].get_color(), label="cf{} tracking".format(k))
     ax.legend()
     ax.set_title('Velocity tracking')
@@ -276,7 +278,8 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
       ax[0].plot(robot.U_rollout[:,0], label="cf{} uy".format(k))
       ax[0].plot(robot.U_rollout[:,1], label="cf{} uz".format(k))
     line = ax[1].plot(torch.norm(robot.U_rollout, dim=1), label="cf{} thrust".format(k))
-    ax[1].axhline(y=robot.g*robot.thrust_to_weight, color=line[0].get_color(), linestyle='--')
+    ax[1].plot(torch.norm(robot.U_des2, dim=1), color=line[0].get_color(), linestyle='--')
+    ax[1].axhline(y=robot.g*robot.thrust_to_weight, color=line[0].get_color(), linestyle=':')
   ax[0].legend()  
   ax[1].legend()
   ax[1].set_title('Control and thrust')
@@ -300,14 +303,26 @@ def vis_pdf(robots, stats, name='output.pdf', use3D=False):
   pp.savefig(fig)
   plt.close()
 
+  if text is not None:
+    fig = plt.figure(figsize=(11.69,8.27))
+    fig.clf()
+    fig.text(0.5,0.5, text, transform=fig.transFigure, size=24, ha="center")
+    pp.savefig(fig)
+    plt.close()
+
   pp.close()
 
 
-def tracking(robots, dt, feedforward=True):
+def tracking(robots, dt, fixed_T=None):
   # find total time for all robots to reach their goal
   T = 0
   for robot in robots:
     T = max(T, robot.X_des.size(0))
+
+  if fixed_T is not None:
+    if T > fixed_T:
+      print("WARNING: provided fixed time horizon ({}) smaller than planning horizon ({})!".format(fixed_T, T))
+    T = fixed_T
 
   # for each robot allocate the required memory
   for robot in robots:
@@ -315,6 +330,17 @@ def tracking(robots, dt, feedforward=True):
     robot.U_rollout = torch.zeros((T-1, robot.ctrlDim))
     robot.Fa_rollout = torch.zeros((T-1,))
     robot.X_rollout[0] = robot.x0
+
+    # extend/shorten X_des and U_des
+    robot.X_des2 = torch.zeros((T, robot.stateDim))
+    robot.U_des2 = torch.zeros((T-1, robot.ctrlDim))
+    max_idx = min(robot.X_des.size(0), T)
+    robot.X_des2[0:max_idx] = robot.X_des[0:max_idx]
+    robot.X_des2[max_idx:] = robot.X_des[-1]
+    max_idx = min(robot.U_des.size(0), T-1)
+    robot.U_des2[0:max_idx] = robot.U_des[0:max_idx]
+    robot.U_des2[max_idx:] = torch.zeros(robot.ctrlDim)
+    robot.U_des2[max_idx:,-1] = robot.g
 
   # simulate the execution
   for t in range(T-1):
@@ -325,28 +351,31 @@ def tracking(robots, dt, feedforward=True):
         if k != k_other:
           data_neighbors.append((robot_other.cftype, robot_other.X_rollout[t]))
 
+      robot.Fa_rollout[t] = robot.compute_Fa(robot.X_rollout[t], data_neighbors, True)
+
       # control + forward propagation
-      if feedforward and t < robot.U_des.size(0):
-        v_d_dot = robot.U_des[t]
-      else:
-        v_d_dot = torch.zeros(robot.ctrlDim)
-        v_d_dot[-1] = robot.g
 
-      if t < robot.X_des.size(0):
-        x_d = robot.X_des[t]
-      else:
-        x_d = robot.X_des[-1]
+      # if the planner did not account for this part and Fa prediction is enabled
+      # correct the feedforward term
+      max_idx = min(robot.U_des.size(0), T-1)
+      if t >= max_idx and robot.useNN:
+        robot.U_des2[t,-1] -= robot.g*robot.Fa_rollout[t]/robot.mass
 
-      u = robot.controller(x=robot.X_rollout[t], x_d=x_d, v_d_dot=v_d_dot)
+      v_d_dot = robot.U_des2[t]
+
+      x_d = robot.X_des2[t]
+
+      u = robot.controller(x=robot.X_rollout[t], x_d=x_d, v_d_dot=v_d_dot, dt=dt)
       robot.U_rollout[t] = u
       dx = robot.f(robot.X_rollout[t], robot.U_rollout[t], data_neighbors, useNN=True)
       robot.X_rollout[t+1] = robot.X_rollout[t] + dt*dx
-      robot.Fa_rollout[t] = robot.compute_Fa(robot.X_rollout[t], data_neighbors, True)
 
   # TODO: disable grad by default...
   for robot in robots:
     robot.X_rollout = robot.X_rollout.detach()
+    robot.X_des2 = robot.X_des2.detach()
     robot.U_rollout = robot.U_rollout.detach()
+    robot.U_des2 = robot.U_des2.detach()
     robot.Fa_rollout = robot.Fa_rollout.detach()
 
   # energy = torch.sum(U.norm(dim=1) * dt).item()
@@ -354,7 +383,7 @@ def tracking(robots, dt, feedforward=True):
   # print("energy: ", energy, " tracking error: ", tracking_error)
   # return X.detach(), U.detach(), Fa.detach()
 
-def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, seed=None):
+def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, fixed_T=None, seed=None):
 
   if seed is None:
     seed = int.from_bytes(os.urandom(4), sys.byteorder)
@@ -365,13 +394,14 @@ def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, 
 
   dt = 0.05
 
-  model_folder = '../data/models/models_19and20/epoch5_lip3_5'
+  model_folder = '../data/models/val_with23_wdelay/epoch20_lip3_h20_f0d35_B256'
+  xy_filter = 0.35
   robots = []
   for ri in robot_info:
     if use3D:
-      robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype=ri['type'])
+      robot = RobotCrazyFlie3D(model_folder, useNN=useNN, cftype=ri['type'], xy_filter=xy_filter)
     else:
-      robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype=ri['type'])
+      robot = RobotCrazyFlie2D(model_folder, useNN=useNN, cftype=ri['type'], xy_filter=xy_filter)
     robot.x0 = ri['x0']
     robot.xf = ri['xf']
     robots.append(robot)
@@ -400,30 +430,66 @@ def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, 
 
             # run tree search to find initial solution
             if use3D:
-              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=200000, top_k=10, num_branching=4, trials=1, cost_limit=cost_limits[idx])
+              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=1, iters=500000, top_k=10, num_branching=2, trials=1, cost_limit=cost_limits[idx])
             else:
-              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=2, iters=25000, top_k=10, num_branching=2, trials=1, cost_limit=cost_limits[idx])
+              x, u, best_cost = tree_search(robot, robot.x0, robot.xf, dt, data_neighbors, prop_iter=1, iters=100000, top_k=10, num_branching=2, trials=1, cost_limit=cost_limits[idx])
             if x is not None:
               cost_limits[idx] = 0.9 * best_cost
               successive_failures[idx] = 0
               robot.X_treesearch = x
               robot.U_treesearch = u
-              # setup for later iterative refinement
-              robot.X_scpminxf = x
-              robot.U_scpminxf = u
-              robot.obj_values_scpminxf = []
+              # # setup for later iterative refinement
+              # robot.X_scpminxf = x
+              # robot.U_scpminxf = u
+              # robot.obj_values_scpminxf = []
             else:
               successive_failures[idx] += 1
 
-      # pickle.dump( robots, open( "robots.p", "wb" ) )
+      pickle.dump( robots, open( "treesearch.p", "wb" ) )
     else:
-      robots = pickle.load( open( "robots.p", "rb" ) )
+      # robots = pickle.load( open( "treesearch.p", "rb" ) )
+      robots = pickle.load( open( "/home/whoenig/projects/caltech/neural-swarm/data/planning/case_LL_iter_1_NN.pdf.p", "rb" ) )
 
     # vis_pdf(robots, "output.pdf", use3D=use3D)
     # exit()
 
+    # resize all X/U_scpminxf in order to avoid corner cases where one robot stays at its goal and is subject
+    # to high Fa
+    T = 0
+    for robot in robots:
+      T = max(T, robot.X_treesearch.size(0))
 
+    for k, robot in enumerate(robots):
+      robot.X_scpminxf = torch.zeros((T, robot.stateDim))
+      robot.U_scpminxf = torch.zeros((T-1, robot.ctrlDim))
+      robot.obj_values_scpminxf = []
 
+      # extend/shorten X_des and U_des
+      max_idx = min(robot.U_treesearch.size(0), T-1)
+      robot.U_scpminxf[0:max_idx] = robot.U_treesearch[0:max_idx]
+      robot.U_scpminxf[max_idx:] = torch.zeros(robot.ctrlDim)
+      robot.U_scpminxf[max_idx:,-1] = robot.g
+
+      max_idx = min(robot.X_treesearch.size(0), T)
+      robot.X_scpminxf[0:max_idx] = robot.X_treesearch[0:max_idx]
+      robot.X_scpminxf[max_idx:] = robot.X_treesearch[-1]
+
+    # if we use NN, make sure we consider Fa in the control output
+    with torch.no_grad():
+      for t in range(T-1):
+        for k, robot in enumerate(robots):
+          max_idx = min(robot.X_treesearch.size(0), T)
+          if t >= max_idx and robot.useNN:
+            # compute neighboring states:
+            data_neighbors = []
+            for k_other, robot_other in enumerate(robots):
+              if k != k_other:
+                data_neighbors.append((robot_other.cftype, robot_other.X_scpminxf[t]))
+
+            Fa = robot.compute_Fa(robot.X_scpminxf[t], data_neighbors)
+            robot.U_scpminxf[t,-1] -= robot.g*Fa/robot.mass
+            # dx = robot.f(robot.X_scpminxf[t], robot.U_scpminxf[t], data_neighbors)
+            # robot.X_scpminxf[t+1] = robot.X_scpminxf[t] + dt*dx
 
     # run scp (min xf) to exactly go to the goal
     for iteration in range(100):
@@ -470,15 +536,12 @@ def sequential_planning(useNN, robot_info, file_name="output.pdf", use3D=False, 
     if failure:
       continue
     else:
+      pickle.dump( robots, open( "{}.p".format(file_name), "wb" ) )
       break
 
-    # pickle.dump( robots, open( "robots.p", "wb" ) )
-
-  # robots = pickle.load( open( "robots.p", "rb" ) )
-
-  tracking(robots, dt)
+  tracking(robots, dt, fixed_T=fixed_T)
   stats = compute_stats(robots, dt)
-  vis_pdf(robots, stats, file_name, use3D=use3D)
+  vis_pdf(robots, stats, file_name, use3D=use3D, text="seed: {}".format(seed))
 
   return stats
 
@@ -486,6 +549,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("--use3D", action='store_true', help="use 3d version")
   parser.add_argument("--vis", help="visualize a *.p file")
+  parser.add_argument("--seed", type=int, default=None, help="random number seed")
   args = parser.parse_args()
 
   if args.vis:
@@ -513,16 +577,17 @@ if __name__ == '__main__':
       robot_info = [
           {
             'type': 'small',
-            'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-            'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+            'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+            'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
           },
           {
             'type': 'large',
-            'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-            'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+            # 'type': 'small',
+            'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+            'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
           },
         ]
 
-    sequential_planning(True, robot_info, file_name="output.pdf", use3D=args.use3D)
+    sequential_planning(True, robot_info, file_name="output.pdf", use3D=args.use3D, seed=args.seed)
 
   subprocess.call(["xdg-open", "output.pdf"])
