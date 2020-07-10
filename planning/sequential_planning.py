@@ -108,7 +108,7 @@ def add_result_figs(robots, pp, field, name, use3D=False, animate = False):
 
   # velocity
   colors = []
-  fig, ax = plt.subplots(2, 1)
+  fig, ax = plt.subplots(3, 1)
   for k, robot in enumerate(robots):
     X = getattr(robot, 'X_' + field)
     U = getattr(robot, 'U_' + field)
@@ -117,11 +117,13 @@ def add_result_figs(robots, pp, field, name, use3D=False, animate = False):
     else:
       line = ax[0].plot(torch.norm(X[:,2:4], dim=1), label="cf{}".format(k))
     ax[1].plot(torch.norm(U, dim=1), line[0].get_color())
+    ax[2].plot(X[:,-1], line[0].get_color())
     colors.append(line[0].get_color())
   ax[0].legend()
   ax[0].set_title('{} - Velocity'.format(name))
   ax[1].legend()
   ax[1].set_title('{} - Acceleration'.format(name))
+  ax[2].set_title('{} - Fa'.format(name))
   pp.savefig(fig)
   plt.close(fig)
 
@@ -575,14 +577,14 @@ if __name__ == '__main__':
       robot_info = [
           {
             'type': 'small',
-            'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
-            'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+            'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
           },
           {
             'type': 'large',
             # 'type': 'small',
-            'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
-            'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+            'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+            'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
           },
         ]
 

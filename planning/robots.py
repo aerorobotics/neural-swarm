@@ -12,24 +12,30 @@ class RobotCrazyFlie2D:
   }
 
   def __init__(self, model_folder, useNN=False, cftype="small", xy_filter=math.inf):
-    # x = [py, pz, vy, vz]
+    # x = [py, pz, vy, vz, faz]
     # u = [fdy, fdz]
-    self.stateDim = 4
+    self.stateDim = 5
     self.ctrlDim = 2
-    self.x_min = [-1, 0, -0.5, -0.5]
-    self.x_max = [1, 2, 0.5, 0.5]
+    self.x_min = [-1, 0, -0.5, -0.5, -5]
+    self.x_max = [1, 2, 0.5, 0.5, 5]
     self.g = 9.81
     self.cftype = cftype
     self.radius = RobotCrazyFlie2D.radius_by_type[self.cftype]
     if self.cftype == "small":
       self.thrust_to_weight = 1.4 # default motors: 1.4; upgraded motors: 2.6
       self.mass = 34 # g
+      self.x_min[-1] = -5
+      self.x_max[-1] = 5
     elif self.cftype == "small_powerful_motors":
       self.thrust_to_weight = 2.6 # default motors: 1.4; upgraded motors: 2.6
       self.mass = 34 # g
+      self.x_min[-1] = -5
+      self.x_max[-1] = 5
     elif self.cftype == "large":
       self.thrust_to_weight = 2.1 # max thrust: ~145g; 
       self.mass = 67 # g
+      self.x_min[-1] = -10
+      self.x_max[-1] = 10
     else:
       raise Exception("Unknown cftype!")
 
@@ -110,7 +116,8 @@ class RobotCrazyFlie2D:
       x[2],
       x[3],
       u[0],
-      u[1] + self.g*(Fa/self.mass-1.0)])
+      u[1] + self.g*(Fa/self.mass-1.0),
+      (Fa - x[4]) / 0.05]) # TODO: this is a bit hacky...
 
   def controller(self, x, x_d, v_d_dot, dt):
     self.i_part += (x[0:2]-x_d[0:2]) * dt

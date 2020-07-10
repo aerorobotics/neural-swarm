@@ -5,13 +5,15 @@ import hnswlib
 
 def state_to_index(x):
   if x.ndim == 1:
-    velIdx = x.shape[0] // 2
+    velIdx = (x.shape[0]-1) // 2
+    x2 = x[0:4]
   else:
-    velIdx = x.shape[1] // 2
+    velIdx = (x.shape[1]-1) // 2
+    x2 = x[:,0:4]
   if velIdx == 2:
-    return x * np.array([1,1,0.5,0.5])
+    return x2 * np.array([1,1,0.5,0.5])
   else:
-    return x * np.array([1,1,1,0.5,0.5,0.5])
+    return x2 * np.array([1,1,1,0.5,0.5,0.5])
 
 # def state_from_index(x):
 #   return x / np.array([1,1,0.05,0.05])
@@ -23,7 +25,7 @@ def state_valid(robot, x, data_neighbors):
     return False
 
   # check for collisions with neighbors
-  velIdx = x.shape[0] // 2
+  velIdx = (x.shape[0]-1) // 2
   for cftype_neighbor, x_neighbor in data_neighbors:
     dist = np.linalg.norm(x[0:velIdx] - x_neighbor.numpy()[0:velIdx])
     if dist < robot.min_distance(cftype_neighbor):
@@ -68,7 +70,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
     best_i = 0
     best_cost = cost_limit
 
-    index = hnswlib.Index(space='l2', dim=robot.stateDim)
+    index = hnswlib.Index(space='l2', dim=robot.stateDim-1)
     # ef_construction - controls index search speed/build speed tradeoff
     #
     # M - is tightly connected with internal dimensionality of the data. Strongly affects memory consumption (~M)

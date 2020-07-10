@@ -24,13 +24,13 @@ if __name__ == '__main__':
       'robots': [
         {
           'type': 'small',
-          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
         },
         {
           'type': 'large',
-          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
@@ -41,13 +41,13 @@ if __name__ == '__main__':
       'robots': [
         {
           'type': 'small',
-          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
         },
         {
           'type': 'small',
-          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
@@ -58,13 +58,13 @@ if __name__ == '__main__':
       'robots': [
         {
           'type': 'large',
-          'x0': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
         },
         {
           'type': 'large',
-          'x0': torch.tensor([0.25,1,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
         },
       ]
     },

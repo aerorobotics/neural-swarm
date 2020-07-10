@@ -56,7 +56,7 @@ def scp(robot, initial_x, initial_u, dt, data_neighbors, trust_region=False, tru
 
     constraints = [
       x[0] == x0, # initial state constraint
-      x[-1] == initial_x[-1], # goal state constraint
+      x[-1,0:4] == initial_x[-1,0:4], # goal state constraint
     ]
 
     # trust region
@@ -167,7 +167,7 @@ def scp_min_xf(robot, initial_x, initial_u, xf, dt, data_neighbors, trust_region
     u = cp.Variable((T-1, robot.ctrlDim))
 
     # objective = cp.Minimize(cp.sum(cp.abs(x[-1] - xf)))
-    objective = cp.Minimize(cp.norm(x[-1] - xf, "inf"))
+    objective = cp.Minimize(cp.norm(x[-1,0:4] - xf[0:4], "inf"))
 
     constraints = [
       x[0] == x0, # initial state constraint
