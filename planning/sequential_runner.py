@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # },
   ]
 
-  if True:
+  if False:
     useNNs = []
     robot_infos = []
     file_names = []
@@ -118,14 +118,16 @@ if __name__ == '__main__':
   tracking_errors = np.zeros(len(results))
   max_z_errors = np.zeros(len(results))
   control_efforts = np.zeros(len(results))
+  fa_within_bounds = np.zeros(len(results))
   for k, stats in enumerate(results):
     tracking_errors[k] = stats['tracking_errors'][0]
     max_z_errors[k] = stats['max_z_errors'][0]
     # control_efforts[k] = stats['control_efforts'][0]
     # tracking_errors[k] = stats['tracking_errors_avg']
     control_efforts[k] = stats['control_efforts_avg']
+    fa_within_bounds[k] = stats['fa_within_bounds']
 
-  fig, ax = plt.subplots(3, len(cases), sharey='row', squeeze=False)
+  fig, ax = plt.subplots(4, len(cases), sharey='row', squeeze=False)
   for c, case in enumerate(cases):
     idx = c * 2 * repeats
 
@@ -141,8 +143,12 @@ if __name__ == '__main__':
     ax[1,c].grid(True)
     ax[2,c].grid(True)
 
+    ax[3,c].bar(0, np.sum(fa_within_bounds[idx:idx+repeats]))#, labels=["NN", "no NN"])
+    ax[3,c].bar(1, np.sum(fa_within_bounds[idx+repeats:idx+2*repeats]))#, labels=["NN", "no NN"])
+
   ax[0,0].set_ylabel('Tracking error')
   ax[1,0].set_ylabel('Max z error')
   ax[2,0].set_ylabel('Avg. control effort')
+  ax[3,0].set_ylabel('# Success')
 
   plt.show()

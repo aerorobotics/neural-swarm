@@ -24,18 +24,18 @@ class RobotCrazyFlie2D:
     if self.cftype == "small":
       self.thrust_to_weight = 1.4 # default motors: 1.4; upgraded motors: 2.6
       self.mass = 34 # g
-      self.x_min[-1] = -5
-      self.x_max[-1] = 5
+      self.x_min[-1] = -self.g*5/self.mass
+      self.x_max[-1] =  self.g*5/self.mass
     elif self.cftype == "small_powerful_motors":
       self.thrust_to_weight = 2.6 # default motors: 1.4; upgraded motors: 2.6
       self.mass = 34 # g
-      self.x_min[-1] = -5
-      self.x_max[-1] = 5
+      self.x_min[-1] = -self.g*5/self.mass
+      self.x_max[-1] =  self.g*5/self.mass
     elif self.cftype == "large":
       self.thrust_to_weight = 2.1 # max thrust: ~145g; 
       self.mass = 67 # g
-      self.x_min[-1] = -10
-      self.x_max[-1] = 10
+      self.x_min[-1] = -self.g*10/self.mass
+      self.x_max[-1] =  self.g*10/self.mass
     else:
       raise Exception("Unknown cftype!")
 
@@ -66,10 +66,13 @@ class RobotCrazyFlie2D:
   def min_distance(self, cftype_neighbor):
     return self.radius + RobotCrazyFlie2D.radius_by_type[cftype_neighbor]
 
-  def compute_Fa(self, x, data_neighbors, useNN_override=None):
+  def compute_Fa(self, x, data_neighbors, useNN_override=None, cftype=None):
     useNN = self.useNN
     if useNN_override is not None:
       useNN = useNN_override
+
+    if cftype is None:
+      cftype = self.cftype
 
     if useNN:
       # if x[0] > -0.3 and x[0] < -0.2:
@@ -98,9 +101,9 @@ class RobotCrazyFlie2D:
           x_12[2:4] = -x[2:4]
         rho_input += self.phi_G_net(x_12)
 
-      if self.cftype == "small" or self.cftype == "small_powerful_motors":
+      if cftype == "small" or cftype == "small_powerful_motors":
         faz = self.rho_S_net(rho_input)
-      elif self.cftype == "large":
+      elif cftype == "large":
         faz = self.rho_L_net(rho_input)
       else:
         raise Exception("Unknown cftype!")
@@ -109,7 +112,7 @@ class RobotCrazyFlie2D:
     else:
       return 0.0
 
-  def f(self, x, u, data_neighbors, useNN=None):
+  def f(self, x, u, data_neighbors, useNN=None, dt=0.05):
 
     Fa = self.compute_Fa(x, data_neighbors, useNN)
     return torch.stack([
@@ -117,7 +120,17 @@ class RobotCrazyFlie2D:
       x[3],
       u[0],
       u[1] + self.g*(Fa/self.mass-1.0),
-      (Fa - x[4]) / 0.05]) # TODO: this is a bit hacky...
+      (self.g*Fa/self.mass - x[4]) / dt]) # TODO: this is a bit hacky...
+
+  def step(self, x, u, data_neighbors, dt, useNN=None):
+    Fa = self.compute_Fa(x, data_neighbors, useNN)
+    return torch.stack([
+      x[0] + dt * x[2],
+      x[1] + dt * x[3],
+      x[2] + dt * u[0],
+      x[3] + dt * (u[1] + self.g*(Fa/self.mass-1.0)),
+      self.g*Fa/self.mass])
+
 
   def controller(self, x, x_d, v_d_dot, dt):
     self.i_part += (x[0:2]-x_d[0:2]) * dt
