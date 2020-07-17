@@ -5,10 +5,28 @@ from nns import phi_Net
 
 
 class RobotCrazyFlie2D:
-  radius_by_type = {
-    'small': 0.1,
-    'small_powerful_motors': 0.1,
-    'large': 0.15,
+  properties_by_type = {
+    'small': {
+      'radius': 0.1,
+      'mass': 34, #g
+      'thrust_to_weight': 1.4,
+      'max_Fa': 5, #g
+      'trust_Fa': 2.5, #g
+    },
+    'small_powerful_motors': {
+      'radius': 0.1,
+      'mass': 34, #g
+      'thrust_to_weight': 2.6,
+      'max_Fa': 8, #g
+      'trust_Fa': 4, #g
+    },
+    'large': {
+      'radius': 0.15,
+      'mass': 67, #g
+      'thrust_to_weight': 2.1,
+      'max_Fa': 10, #g
+      'trust_Fa': 5, #g
+    }
   }
 
   def __init__(self, model_folder, useNN=False, cftype="small", xy_filter=math.inf):
@@ -20,24 +38,12 @@ class RobotCrazyFlie2D:
     self.x_max = [1, 2, 0.5, 0.5, 5]
     self.g = 9.81
     self.cftype = cftype
-    self.radius = RobotCrazyFlie2D.radius_by_type[self.cftype]
-    if self.cftype == "small":
-      self.thrust_to_weight = 1.4 # default motors: 1.4; upgraded motors: 2.6
-      self.mass = 34 # g
-      self.x_min[-1] = -self.g*5/self.mass
-      self.x_max[-1] =  self.g*5/self.mass
-    elif self.cftype == "small_powerful_motors":
-      self.thrust_to_weight = 2.6 # default motors: 1.4; upgraded motors: 2.6
-      self.mass = 34 # g
-      self.x_min[-1] = -self.g*5/self.mass
-      self.x_max[-1] =  self.g*5/self.mass
-    elif self.cftype == "large":
-      self.thrust_to_weight = 2.1 # max thrust: ~145g; 
-      self.mass = 67 # g
-      self.x_min[-1] = -self.g*10/self.mass
-      self.x_max[-1] =  self.g*10/self.mass
-    else:
-      raise Exception("Unknown cftype!")
+    self.radius = RobotCrazyFlie2D.properties_by_type[self.cftype]['radius']
+    self.mass = RobotCrazyFlie2D.properties_by_type[self.cftype]['mass']
+    self.thrust_to_weight = RobotCrazyFlie2D.properties_by_type[self.cftype]['thrust_to_weight']
+    max_Fa = RobotCrazyFlie2D.properties_by_type[self.cftype]['max_Fa']
+    self.x_min[-1] = -max_Fa
+    self.x_max[-1] = max_Fa
 
     self.H = 20
     self.rho_L_net = rho_Net(hiddendim=self.H)
@@ -64,7 +70,34 @@ class RobotCrazyFlie2D:
 
 
   def min_distance(self, cftype_neighbor):
-    return self.radius + RobotCrazyFlie2D.radius_by_type[cftype_neighbor]
+    return self.radius + RobotCrazyFlie2D.properties_by_type[cftype_neighbor]['radius']
+
+  def max_Fa(self, cftype):
+    return RobotCrazyFlie2D.properties_by_type[cftype]['max_Fa']
+
+  def trust_Fa(self, cftype):
+    return RobotCrazyFlie2D.properties_by_type[cftype]['trust_Fa']
+
+  # def compute_Fa(self, x, data_neighbors, useNN_override=None, cftype=None):
+  #   useNN = self.useNN
+  #   if useNN_override is not None:
+  #     useNN = useNN_override
+
+  #   if cftype is None:
+  #     cftype = self.cftype
+
+  #   if useNN:
+  #     output = torch.zeros(1,dtype=torch.float32)
+  #     for cftype_neighbor, x_neighbor in data_neighbors:
+  #       rel = x_neighbor[0:2] - x[0:2]
+  #       if rel[1] > 0:
+  #         output += torch.exp(-torch.pow(rel[0]/0.1, 2)) * -3/(torch.abs(rel[1]+0.01))
+  #       else:
+  #         output += torch.exp(-torch.pow(rel[0]/0.1, 2)) * -0.5/(torch.abs(rel[1]+0.01))
+
+  #     return output[0]
+  #   else:
+  #     return torch.zeros(1,dtype=torch.float32)[0]
 
   def compute_Fa(self, x, data_neighbors, useNN_override=None, cftype=None):
     useNN = self.useNN
@@ -79,10 +112,10 @@ class RobotCrazyFlie2D:
       #   return -12.0
       # return 2.0
 
-      rho_input = torch.zeros(self.H)
+      rho_input = torch.zeros(self.H, dtype=torch.float32)
       for cftype_neighbor, x_neighbor in data_neighbors:
         if abs(x_neighbor[0] - x[0]) <= self.xy_filter:
-          x_12 = torch.zeros(6)
+          x_12 = torch.zeros(6, dtype=torch.float32)
           x_12[1:3] = x_neighbor[0:2] - x[0:2]
           if self.use_relative_velocity:
             x_12[4:] = x_neighbor[2:4] - x[2:4]
@@ -95,7 +128,7 @@ class RobotCrazyFlie2D:
 
       # interaction with the ground
       if self.use_ground:
-        x_12 = torch.zeros(4)
+        x_12 = torch.zeros(4, dtype=torch.float32)
         x_12[0] = self.x_min[1] - x[1]
         if self.use_relative_velocity:
           x_12[2:4] = -x[2:4]
@@ -110,27 +143,27 @@ class RobotCrazyFlie2D:
 
       return faz[0]
     else:
-      return 0.0
+      return torch.zeros(1,dtype=torch.float32)[0]
 
-  def f(self, x, u, data_neighbors, useNN=None, dt=0.05):
+  # def f(self, x, u, data_neighbors, useNN=None, dt=0.05):
 
-    Fa = self.compute_Fa(x, data_neighbors, useNN)
-    return torch.stack([
-      x[2],
-      x[3],
-      u[0],
-      u[1] + self.g*(Fa/self.mass-1.0),
-      (self.g*Fa/self.mass - x[4]) / dt]) # TODO: this is a bit hacky...
+  #   Fa = self.compute_Fa(x, data_neighbors, useNN)
+  #   return torch.stack([
+  #     x[2],
+  #     x[3],
+  #     u[0],
+  #     u[1] + self.g*(Fa/self.mass-1.0),
+  #     (self.g*Fa/self.mass - x[4]) / dt]) # TODO: this is a bit hacky...
 
-  def step(self, x, u, data_neighbors, dt, useNN=None):
-    Fa = self.compute_Fa(x, data_neighbors, useNN)
-    return torch.stack([
+  def step(self, x, u, data_neighbors_next, dt, useNN=None):
+    current_Fa = x[4]
+    next_x = torch.stack([
       x[0] + dt * x[2],
       x[1] + dt * x[3],
       x[2] + dt * u[0],
-      x[3] + dt * (u[1] + self.g*(Fa/self.mass-1.0)),
-      self.g*Fa/self.mass])
-
+      x[3] + dt * (u[1] + self.g*(current_Fa/self.mass-1.0))])
+    next_Fa = self.compute_Fa(next_x, data_neighbors_next, useNN)
+    return torch.stack((next_x[0], next_x[1], next_x[2], next_x[3], next_Fa))
 
   def controller(self, x, x_d, v_d_dot, dt):
     self.i_part += (x[0:2]-x_d[0:2]) * dt

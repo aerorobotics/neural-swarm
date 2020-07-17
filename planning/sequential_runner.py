@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # },
   ]
 
-  if False:
+  if True:
     useNNs = []
     robot_infos = []
     file_names = []
@@ -97,9 +97,9 @@ if __name__ == '__main__':
           useNNs.append(useNN)
           robot_infos.append(case)
           if useNN:
-            file_names.append("../data/planning/case_{}_iter_{}_NN.pdf".format(case['shortname'], j))
+            file_names.append("../data/planning/case_{}_iter_{}_NN".format(case['shortname'], j))
           else:
-            file_names.append("../data/planning/case_{}_iter_{}.pdf".format(case['shortname'], j))
+            file_names.append("../data/planning/case_{}_iter_{}".format(case['shortname'], j))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers) as executor:
       results = executor.map(sequential_planning, 
@@ -126,6 +126,7 @@ if __name__ == '__main__':
     # tracking_errors[k] = stats['tracking_errors_avg']
     control_efforts[k] = stats['control_efforts_avg']
     fa_within_bounds[k] = stats['fa_within_bounds']
+    # print(stats['fa_abs_max'], stats['fa_within_bounds'])
 
   fig, ax = plt.subplots(4, len(cases), sharey='row', squeeze=False)
   for c, case in enumerate(cases):
@@ -142,6 +143,7 @@ if __name__ == '__main__':
     ax[0,c].grid(True)
     ax[1,c].grid(True)
     ax[2,c].grid(True)
+
 
     ax[3,c].bar(0, np.sum(fa_within_bounds[idx:idx+repeats]))#, labels=["NN", "no NN"])
     ax[3,c].bar(1, np.sum(fa_within_bounds[idx+repeats:idx+2*repeats]))#, labels=["NN", "no NN"])

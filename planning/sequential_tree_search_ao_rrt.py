@@ -32,13 +32,23 @@ def state_valid(robot, x, data_neighbors):
       # print("not valid2", x)
       return False
 
+  # check for trust region for Fa
+  for k, (cftype_neighbor, x_neighbor) in enumerate(data_neighbors):
+    other_neighbors = [(robot.cftype, torch.from_numpy(x))] + data_neighbors[0:k-1] + data_neighbors[k+1:]
+    Fa_neighbor = robot.compute_Fa(x_neighbor, other_neighbors, cftype=cftype_neighbor)
+    if abs(Fa_neighbor - x_neighbor[4]) > robot.trust_Fa(cftype_neighbor) or \
+       abs(Fa_neighbor) > robot.max_Fa(cftype_neighbor):
+    # if abs(Fa_neighbor) > robot.max_Fa(cftype_neighbor):
+      # print("FA VIOLATION ", Fa_neighbor, x_neighbor[4])
+      return False
+
   return True
 
 # see https://stackoverflow.com/questions/5408276/sampling-uniformly-distributed-random-points-inside-a-spherical-volume
 def sample_vector(dim,max_norm,num_points=1):
     r = max_norm
     ndim = dim
-    x = np.random.normal(size=(num_points, ndim))
+    x = np.random.normal(size=(num_points, ndim)).astype(np.float32)
     ssq = np.sum(x**2,axis=1)
     fr = r*gammainc(ndim/2,ssq/2)**(1/ndim)/np.sqrt(ssq)
     frtiled = np.tile(fr.reshape(num_points,1),(1,ndim))
@@ -52,11 +62,11 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
   xf = xf.detach().numpy()
 
   parents = -np.ones((iters,),dtype=np.int)
-  states = np.zeros((iters,robot.stateDim))
-  states_temp = np.zeros((iters,prop_iter+1,robot.stateDim))
-  actions = np.zeros((iters,robot.ctrlDim))
+  states = np.zeros((iters,robot.stateDim),dtype=np.float32)
+  states_temp = np.zeros((iters,prop_iter+1,robot.stateDim),dtype=np.float32)
+  actions = np.zeros((iters,robot.ctrlDim),dtype=np.float32)
   timesteps = np.zeros((iters,),dtype=np.int)
-  cost = np.zeros((iters,))
+  cost = np.zeros((iters,),dtype=np.float32)
   expand_attempts = np.zeros((iters,),dtype=np.int)
   expand_successes = np.zeros((iters,),dtype=np.int)
 
@@ -131,33 +141,34 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
         states_temp[i,0] = states[idx]
         all_states_valid = True
 
-        # compute neighbors for first timestep
-        nx_idx = timesteps[idx]
-        data_neighbors_i = []
+        # compute neighbors for next timestep
+        nx_idx = timesteps[idx] + 1
+        data_neighbors_next_i = []
         for cftype_neighbor, x_neighbor in data_neighbors:
           if x_neighbor.shape[0] > nx_idx:
-            data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+            data_neighbors_next_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
           else:
-            data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+            data_neighbors_next_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
         for k in range(1,prop_iter+1):
 
           # propagate
-          states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
-
-          # compute neighbors for this timestep
-          nx_idx = timesteps[idx] + k
-          data_neighbors_i = []
-          for cftype_neighbor, x_neighbor in data_neighbors:
-            if x_neighbor.shape[0] > nx_idx:
-              data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
-            else:
-              data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+          states_temp[i,k] = robot.step(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_next_i, dt).detach().numpy()
 
           # validity check
-          if not state_valid(robot, states_temp[i,k], data_neighbors_i):
+          if not state_valid(robot, states_temp[i,k], data_neighbors_next_i):
             all_states_valid = False
             break
+
+          if k < prop_iter:
+            # compute neighbors for this timestep
+            nx_idx = timesteps[idx] + 1 + k
+            data_neighbors_next_i = []
+            for cftype_neighbor, x_neighbor in data_neighbors:
+              if x_neighbor.shape[0] > nx_idx:
+                data_neighbors_next_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+              else:
+                data_neighbors_next_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
         if not all_states_valid:
           continue
