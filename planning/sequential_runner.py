@@ -17,57 +17,147 @@ if __name__ == '__main__':
   repeats = 5
 
   cases = [
+    # {
+    #   'name': "Small/Large Swap",
+    #   'shortname': "SL",
+    #   'use3D': False,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
+    # {
+    #   'name': "Small/Small Swap",
+    #   'shortname': "SS",
+    #   'use3D': False,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
+    # {
+    #   'name': "Large/Large Swap",
+    #   'shortname': "LL",
+    #   'use3D': False,
+    #   'robots': [
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
+    # {
+    #   'name': "small/small/large Swap",
+    #   'shortname': "SSL",
+    #   'use3D': False,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.6,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
     {
-      'name': "Small/Large Swap",
-      'shortname': "SL",
+      'name': "small/small/small Swap",
+      'shortname': "SSS",
       'use3D': False,
       'robots': [
         {
           'type': 'small',
-          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
         },
         {
-          'type': 'large',
-          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'type': 'small',
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.6,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'small',
+          'x0': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
     {
-      'name': "Small/Small Swap",
-      'shortname': "SS",
+      'name': "small/large/large Swap",
+      'shortname': "SLL",
       'use3D': False,
       'robots': [
         {
-          'type': 'small',
-          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'type': 'large',
+          'x0': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
         },
         {
           'type': 'small',
-          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.8,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
     {
-      'name': "Large/Large Swap",
-      'shortname': "LL",
+      'name': "large/large/large Swap",
+      'shortname': "LLL",
       'use3D': False,
       'robots': [
         {
           'type': 'large',
-          'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
         },
         {
           'type': 'large',
-          'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.8,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
+
+
     # {
     #   'name': "Small/Large Swap (3D)",
     #   'shortname': "SL3D",

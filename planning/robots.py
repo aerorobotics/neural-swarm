@@ -1,5 +1,6 @@
 import torch
 import math
+import logging
 from nns import rho_Net
 from nns import phi_Net
 
@@ -10,20 +11,23 @@ class RobotCrazyFlie2D:
       'radius': 0.1,
       'mass': 34, #g
       'thrust_to_weight': 1.4,
+      # 'max_Fa': 5, #g
       'max_Fa': 5, #g
-      'trust_Fa': 2.5, #g
+      'trust_Fa': 5, #g
     },
     'small_powerful_motors': {
       'radius': 0.1,
       'mass': 34, #g
       'thrust_to_weight': 2.6,
+      # 'max_Fa': 8, #g
       'max_Fa': 8, #g
-      'trust_Fa': 4, #g
+      'trust_Fa': 5, #g
     },
     'large': {
       'radius': 0.15,
       'mass': 67, #g
       'thrust_to_weight': 2.1,
+      # 'max_Fa': 10, #g
       'max_Fa': 10, #g
       'trust_Fa': 5, #g
     }
@@ -165,6 +169,9 @@ class RobotCrazyFlie2D:
     next_Fa = self.compute_Fa(next_x, data_neighbors_next, useNN)
     return torch.stack((next_x[0], next_x[1], next_x[2], next_x[3], next_Fa))
 
+  def controller_reset(self):
+    self.i_part = torch.zeros(2)
+
   def controller(self, x, x_d, v_d_dot, dt):
     self.i_part += (x[0:2]-x_d[0:2]) * dt
     self.i_part = torch.clamp(self.i_part, -self.i_limit, self.i_limit)
@@ -179,7 +186,7 @@ class RobotCrazyFlie2D:
     # if the controller outputs a desired value above our limit, scale the vector (keeping its direction)
     u_des_norm = u_des.norm()
     if u_des_norm > self.g * self.thrust_to_weight:
-      print("CLAMPING", u_des_norm, x, x_d, self.i_part)
+      logging.warning("CLAMPING {} {} {} {}".format(u_des_norm, x, x_d, self.i_part))
       return u_des / u_des_norm * self.g * self.thrust_to_weight
     else:
       return u_des

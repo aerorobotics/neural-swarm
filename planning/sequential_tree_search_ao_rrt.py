@@ -2,6 +2,7 @@ import numpy as np
 from scipy.special import gammainc
 import torch
 import hnswlib
+import logging
 
 def state_to_index(x):
   if x.ndim == 1:
@@ -71,7 +72,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
   expand_successes = np.zeros((iters,),dtype=np.int)
 
   for trial in range(trials):
-    print("Run trial {} with cost limit {}".format(trial, cost_limit))
+    logging.info("Run trial {} with cost limit {}".format(trial, cost_limit))
 
     states[0] = x0
     i = 1
@@ -200,7 +201,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       if best_distance < 0.1:
         idx = best_i
-        print("Found solution!", attempt, idx, cost[idx])
+        logging.info("Found solution! {} {} {}".format(attempt, idx, cost[idx]))
         best_cost = cost[idx]
         cost_limit = 0.9 * cost[idx]
 
