@@ -59,6 +59,7 @@ def data_extraction(filename):
     time = (secs - bias) / 1e6
     pos = np.copy(raw.iloc[:, 1:4])
     vel = np.copy(raw.iloc[:, 4:7])
+    speed = np.sqrt(np.sum(vel**2, axis=1))
     acc = np.copy(raw.iloc[:, 7:10])
     qua = np.copy(raw.iloc[:, 10:14])
     thr = np.copy(raw.iloc[:, 14:18])
@@ -69,7 +70,7 @@ def data_extraction(filename):
     omega = np.copy(raw.iloc[:, 27:])
     
     Data = {'time': time, 'pos': pos, 'vel': vel, 'acc': acc, 'qua': qua, 'thr': thr, \
-            'pwm': pwm, 'vol': vol, 'thr_des': thr_des, 'tau_u': tau_u, 'omega': omega}
+            'pwm': pwm, 'vol': vol, 'thr_des': thr_des, 'tau_u': tau_u, 'omega': omega, 'speed': speed}
     
     return Data
 

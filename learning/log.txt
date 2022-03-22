@@ -1,0 +1,83 @@
+Using device: cuda
+***** Data generation and interpolation! *****
+***** Data merge! *****
+***** Fa computation! *****
+***** Input-output pair generation! *****
+Ge2L: (147502, 19) (147502, 3)
+Ge2S: (131924, 19) (131924, 3)
+L2L: (158626, 19) (158626, 3)
+S2S: (143864, 19) (143864, 3)
+L2S: (135765, 19) (135765, 3)
+S2L: (135765, 19) (135765, 3)
+SS2L: (94241, 19) (94241, 3)
+SL2L: (208742, 19) (208742, 3)
+LL2S: (104371, 19) (104371, 3)
+SL2S: (188482, 19) (188482, 3)
+SS2S: (203166, 19) (203166, 3)
+LL2L: (126174, 19) (126174, 3)
+Ge2L: Filter ratio for ground touching and xy are, 0.0536535097829182 0.0
+Ge2S: Filter ratio for ground touching and xy are, 0.0255601710075498 0.0
+L2L: Filter ratio for ground touching and xy are, 0.0011284404826447114 0.2510433346361883
+S2S: Filter ratio for ground touching and xy are, 0.0 0.26896235333370405
+L2S: Filter ratio for ground touching and xy are, 0.0 0.2899200824954885
+S2L: Filter ratio for ground touching and xy are, 0.0006776415129083343 0.2899200824954885
+SS2L: Filter ratio for ground touching and xy are, 0.00014855529971031717 0.10627009475705904
+SL2L: Filter ratio for ground touching and xy are, 0.0015377834839179465 0.12265380230140556
+LL2S: Filter ratio for ground touching and xy are, 9.581205507276926e-05 0.17528815475563136
+SL2S: Filter ratio for ground touching and xy are, 1.0611092836451226e-05 0.13076049702358847
+SS2S: Filter ratio for ground touching and xy are, 2.9532500516818758e-05 0.14960672553478435
+LL2L: Filter ratio for ground touching and xy are, 0.10055161919254363 0.21173141851728566
+***** Training! *****
+Ge2L loss b4 training 13.263404846191406
+Ge2S loss b4 training 2.1683149337768555
+L2L loss b4 training 42.81300354003906
+S2S loss b4 training 9.227548599243164
+L2S loss b4 training 10.774723052978516
+S2L loss b4 training 18.44977569580078
+SS2L loss b4 training 15.789366722106934
+SL2L loss b4 training 45.26238250732422
+LL2S loss b4 training 10.836590766906738
+SL2S loss b4 training 8.752777099609375
+SS2S loss b4 training 7.742033004760742
+LL2L loss b4 training 101.478759765625
+[1] loss: 40881.641
+[2] loss: 28832.726
+[3] loss: 27767.791
+[4] loss: 27433.097
+[5] loss: 27052.209
+[6] loss: 26809.586
+[7] loss: 26729.772
+[8] loss: 26588.880
+[9] loss: 26503.658
+[10] loss: 26538.270
+[11] loss: 26532.893
+[12] loss: 26543.380
+[13] loss: 26374.663
+[14] loss: 26428.297
+[15] loss: 26214.413
+[16] loss: 26178.450
+[17] loss: 26172.741
+[18] loss: 26159.654
+[19] loss: 26233.326
+[20] loss: 26349.492
+Training finished!
+Ge2L loss after training 2.806724786758423
+Ge2S loss after training 0.7808673977851868
+L2L loss after training 7.190605640411377
+S2S loss after training 1.114591121673584
+L2S loss after training 1.290537714958191
+S2L loss after training 6.043676376342773
+SS2L loss after training 8.286935806274414
+SL2L loss after training 20.69237518310547
+LL2S loss after training 1.851365327835083
+SL2S loss after training 2.7927393913269043
+SS2S loss after training 2.4243295192718506
+LL2L loss after training 16.870540618896484
+Validation error:
+[ 3.19510722  0.72481847  6.86743355  1.00840485  2.09947562  7.06904888
+ 12.56600857 19.63935089  1.44997525  3.31319141  2.56516671 15.83117294]
+mean:
+6.549437677480577
+Models saved!
+***** Visualization and validation! *****
+***** Output PDF saved! *****
