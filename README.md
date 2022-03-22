@@ -1,5 +1,5 @@
 # neural-swarm
-Code related to the Neural-Swarm (ICRA 2020, Journal) papers
+Code related to the Neural-Swarm and Neural-Swarm2 (ICRA 2020, T-RO 2021) papers
 
 This relies on some data files from Box, to be copied to the data/ folder.
 This process can be automated using `rclone`:
