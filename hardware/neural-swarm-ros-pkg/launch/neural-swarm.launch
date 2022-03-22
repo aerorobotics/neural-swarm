@@ -58,7 +58,7 @@
           estimator: 2 # 1: complementary, 2: kalman, 3: kalmanUSC (only crazyswarm firmware)
           controller: 3 # 1: PID, 2: mellinger, 3: SJC, 4: mellingerSI, 5: Lee
         ring:
-          effect: 16 # 6: double spinner, 7: solid color, 16: packetRate
+          effect: 0 #16 # 6: double spinner, 7: solid color, 16: packetRate
           solidBlue: 255 # if set to solid color
           solidGreen: 0 # if set to solid color
           solidRed: 0 # if set to solid color

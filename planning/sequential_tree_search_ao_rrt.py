@@ -2,16 +2,19 @@ import numpy as np
 from scipy.special import gammainc
 import torch
 import hnswlib
+import logging
 
 def state_to_index(x):
   if x.ndim == 1:
-    velIdx = x.shape[0] // 2
+    velIdx = (x.shape[0]-1) // 2
+    x2 = x[0:4]
   else:
-    velIdx = x.shape[1] // 2
+    velIdx = (x.shape[1]-1) // 2
+    x2 = x[:,0:4]
   if velIdx == 2:
-    return x * np.array([1,1,0.05,0.05])
+    return x2 * np.array([1,1,0.5,0.5])
   else:
-    return x * np.array([1,1,1,0.05,0.05,0.05])
+    return x2 * np.array([1,1,1,0.5,0.5,0.5])
 
 # def state_from_index(x):
 #   return x / np.array([1,1,0.05,0.05])
@@ -19,13 +22,25 @@ def state_to_index(x):
 def state_valid(robot, x, data_neighbors):
   # check if within the space
   if (x < np.array(robot.x_min)).any() or (x > np.array(robot.x_max)).any():
+    # print("not valid1: ", x)
     return False
 
   # check for collisions with neighbors
-  velIdx = x.shape[0] // 2
+  velIdx = (x.shape[0]-1) // 2
   for cftype_neighbor, x_neighbor in data_neighbors:
     dist = np.linalg.norm(x[0:velIdx] - x_neighbor.numpy()[0:velIdx])
     if dist < robot.min_distance(cftype_neighbor):
+      # print("not valid2", x)
+      return False
+
+  # check for trust region for Fa
+  for k, (cftype_neighbor, x_neighbor) in enumerate(data_neighbors):
+    other_neighbors = [(robot.cftype, torch.from_numpy(x))] + data_neighbors[0:k-1] + data_neighbors[k+1:]
+    Fa_neighbor = robot.compute_Fa(x_neighbor, other_neighbors, cftype=cftype_neighbor)
+    if abs(Fa_neighbor - x_neighbor[4]) > robot.trust_Fa(cftype_neighbor) or \
+       abs(Fa_neighbor) > robot.max_Fa(cftype_neighbor):
+    # if abs(Fa_neighbor) > robot.max_Fa(cftype_neighbor):
+      # print("FA VIOLATION ", Fa_neighbor, x_neighbor[4])
       return False
 
   return True
@@ -34,7 +49,7 @@ def state_valid(robot, x, data_neighbors):
 def sample_vector(dim,max_norm,num_points=1):
     r = max_norm
     ndim = dim
-    x = np.random.normal(size=(num_points, ndim))
+    x = np.random.normal(size=(num_points, ndim)).astype(np.float32)
     ssq = np.sum(x**2,axis=1)
     fr = r*gammainc(ndim/2,ssq/2)**(1/ndim)/np.sqrt(ssq)
     frtiled = np.tile(fr.reshape(num_points,1),(1,ndim))
@@ -48,16 +63,16 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
   xf = xf.detach().numpy()
 
   parents = -np.ones((iters,),dtype=np.int)
-  states = np.zeros((iters,robot.stateDim))
-  states_temp = np.zeros((iters,prop_iter+1,robot.stateDim))
-  actions = np.zeros((iters,robot.ctrlDim))
+  states = np.zeros((iters,robot.stateDim),dtype=np.float32)
+  states_temp = np.zeros((iters,prop_iter+1,robot.stateDim),dtype=np.float32)
+  actions = np.zeros((iters,robot.ctrlDim),dtype=np.float32)
   timesteps = np.zeros((iters,),dtype=np.int)
-  cost = np.zeros((iters,))
+  cost = np.zeros((iters,),dtype=np.float32)
   expand_attempts = np.zeros((iters,),dtype=np.int)
   expand_successes = np.zeros((iters,),dtype=np.int)
 
   for trial in range(trials):
-    print("Run trial {} with cost limit {}".format(trial, cost_limit))
+    logging.info("Run trial {} with cost limit {}".format(trial, cost_limit))
 
     states[0] = x0
     i = 1
@@ -66,7 +81,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
     best_i = 0
     best_cost = cost_limit
 
-    index = hnswlib.Index(space='l2', dim=robot.stateDim)
+    index = hnswlib.Index(space='l2', dim=robot.stateDim-1)
     # ef_construction - controls index search speed/build speed tradeoff
     #
     # M - is tightly connected with internal dimensionality of the data. Strongly affects memory consumption (~M)
@@ -90,6 +105,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       # randomly sample a state
       if attempt % sample_goal_iter == 0:
+        # print(attempt, i)
         # x = xf
         idx = best_i
       else:
@@ -103,7 +119,8 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
 
       # perf improvement: do not attempt to expand nodes that seem to be on the border of the statespace
-      if expand_attempts[idx] > 10 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+      if expand_attempts[idx] > 100 and expand_successes[idx] / expand_attempts[idx] < 0.1:
+        # print("UPS", attempt, idx, states[idx])
         # idx = np.random.randint(0, i)
         continue
 
@@ -125,33 +142,34 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
         states_temp[i,0] = states[idx]
         all_states_valid = True
 
-        # compute neighbors for first timestep
-        nx_idx = timesteps[idx]
-        data_neighbors_i = []
+        # compute neighbors for next timestep
+        nx_idx = timesteps[idx] + 1
+        data_neighbors_next_i = []
         for cftype_neighbor, x_neighbor in data_neighbors:
           if x_neighbor.shape[0] > nx_idx:
-            data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+            data_neighbors_next_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
           else:
-            data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+            data_neighbors_next_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
         for k in range(1,prop_iter+1):
 
           # propagate
-          states_temp[i,k] = states_temp[i,k-1] + robot.f(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_i).detach().numpy() * dt
-
-          # compute neighbors for this timestep
-          nx_idx = timesteps[idx] + k
-          data_neighbors_i = []
-          for cftype_neighbor, x_neighbor in data_neighbors:
-            if x_neighbor.shape[0] > nx_idx:
-              data_neighbors_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
-            else:
-              data_neighbors_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
+          states_temp[i,k] = robot.step(torch.from_numpy(states_temp[i,k-1]), torch.from_numpy(u), data_neighbors_next_i, dt).detach().numpy()
 
           # validity check
-          if not state_valid(robot, states_temp[i,k], data_neighbors_i):
+          if not state_valid(robot, states_temp[i,k], data_neighbors_next_i):
             all_states_valid = False
             break
+
+          if k < prop_iter:
+            # compute neighbors for this timestep
+            nx_idx = timesteps[idx] + 1 + k
+            data_neighbors_next_i = []
+            for cftype_neighbor, x_neighbor in data_neighbors:
+              if x_neighbor.shape[0] > nx_idx:
+                data_neighbors_next_i.append((cftype_neighbor, x_neighbor[nx_idx,:].detach()))
+              else:
+                data_neighbors_next_i.append((cftype_neighbor, x_neighbor[-1,:].detach()))
 
         if not all_states_valid:
           continue
@@ -183,7 +201,7 @@ def tree_search(robot, x0, xf, dt, data_neighbors, prop_iter=2, iters=100000, to
 
       if best_distance < 0.1:
         idx = best_i
-        print("Found solution!", idx, cost[idx])
+        logging.info("Found solution! {} {} {}".format(attempt, idx, cost[idx]))
         best_cost = cost[idx]
         cost_limit = 0.9 * cost[idx]
 

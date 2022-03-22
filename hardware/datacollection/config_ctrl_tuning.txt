@@ -1,0 +1,55 @@
+100   # frequency
+20    # buffer size
+log   # file name
+0     # enable on startup (0/1)
+1     # mode (0: disabled, 1: synchronous stabilizer, 2: asynchronous)
+ctrlSJC.qx
+ctrlSJC.qy
+ctrlSJC.qz
+ctrlSJC.qrx
+ctrlSJC.qry
+ctrlSJC.qrz
+ctrlSJC.omegax
+ctrlSJC.omegay
+ctrlSJC.omegaz
+ctrlSJC.domegax
+ctrlSJC.domegay
+ctrlSJC.domegaz
+ctrlSJC.omegarx
+ctrlSJC.omegary
+ctrlSJC.omegarz
+ctrlSJC.i_error_attx
+ctrlSJC.i_error_atty
+ctrlSJC.i_error_attz
+ctrlSJC.i_error_posx
+ctrlSJC.i_error_posy
+ctrlSJC.i_error_posz
+ctrlSJC.torquex
+ctrlSJC.torquey
+ctrlSJC.torquez
+stateEstimateZ.x
+stateEstimateZ.y
+stateEstimateZ.z
+stateEstimateZ.vx
+stateEstimateZ.vy
+stateEstimateZ.vz
+stateEstimateZ.ax
+stateEstimateZ.ay
+stateEstimateZ.az
+stateEstimateZ.quat
+ctrltargetZ.x
+ctrltargetZ.y
+ctrltargetZ.z
+ctrltargetZ.vx
+ctrltargetZ.vy
+ctrltargetZ.vz
+locSrvZ.x
+locSrvZ.y
+locSrvZ.z
+locSrvZ.quat
+locSrvZ.time
+motor.f1
+motor.f2
+motor.f3
+motor.f4
+pwm.maxThrust

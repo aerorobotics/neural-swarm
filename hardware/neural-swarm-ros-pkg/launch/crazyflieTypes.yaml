@@ -107,9 +107,13 @@ crazyflieTypes:
         Kpos_D_limit: 100.0
         Kpos_Ix: 3 #5
         Kpos_Iy: 3 #5
-        Kpos_Iz: 1.5 #20
-        Kpos_I_limit: 2
-        Kpos_I_decay: 0.997 # 0.75 ** 0.01
+        Kpos_Iz: 10 #20
+        Kpos_I_limit: 0.1
+        Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
+        Katt_Dw_limit: 10000
   CF21SingleMarker:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -187,9 +191,13 @@ crazyflieTypes:
         Kpos_D_limit: 100.0
         Kpos_Ix: 3 #5
         Kpos_Iy: 3 #5
-        Kpos_Iz: 1.5 #20
-        Kpos_I_limit: 2
-        Kpos_I_decay: 0.997 # 0.75 ** 0.01
+        Kpos_Iz: 10 #20
+        Kpos_I_limit: 0.1
+        Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
+        Katt_Dw_limit: 10000
   parrotFrame:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -280,18 +288,17 @@ crazyflieTypes:
         mass: 0.067
 
         # attitude lambda
-        Katt_Px: 6
-        Katt_Py: 6
-        Katt_Pz: 4
+        Katt_Px: 10
+        Katt_Py: 10
+        Katt_Pz: 5
         # attitude K
-        Katt_Dx: 0.006 # 0.0012
-        Katt_Dy: 0.006 # 0.0012
-        Katt_Dz: 0.004 # 0.0012
+        Katt_Dx: 0.01 # 0.0012
+        Katt_Dy: 0.01 # 0.0012
+        Katt_Dz: 0.0025 # 0.0012
 
-        Katt_Dwx: 0.0001
-        Katt_Dwy: 0.0001
+        Katt_Dwx: 0.0002
+        Katt_Dwy: 0.0002
         Katt_Dwz: 0.0 #0.00002
-
 
         # # attitude lambda
         # Katt_Px: 10
@@ -331,9 +338,13 @@ crazyflieTypes:
 
         Kpos_Ix: 3
         Kpos_Iy: 3
-        Kpos_Iz: 3
-        Kpos_I_limit: 2
-        Kpos_I_decay: 0.997 # 0.75 ** 0.01
+        Kpos_Iz: 10
+        Kpos_I_limit: 0.1
+        Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
+        Katt_Dw_limit: 10000
   parrotFrameCF21SingleMarker:
     bigQuad: False
     batteryVoltageWarning: 3.8  # V
@@ -365,16 +376,15 @@ crazyflieTypes:
         # attitude lambda
         Katt_Px: 10
         Katt_Py: 10
-        Katt_Pz: 4
+        Katt_Pz: 1.0 #5 # 4
         # attitude K
-        Katt_Dx: 0.009 # 0.0012
-        Katt_Dy: 0.009 # 0.0012
-        Katt_Dz: 0.004 # 0.0012
+        Katt_Dx: 0.01 # 0.009
+        Katt_Dy: 0.01 # 0.009
+        Katt_Dz: 0.0005 #0.0025 # 0.004
 
         Katt_Dwx: 0.0002
         Katt_Dwy: 0.0002
         Katt_Dwz: 0.0 #0.00002
-
 
         # # attitude lambda
         # Katt_Px: 10
@@ -389,9 +399,9 @@ crazyflieTypes:
         # Katt_Dwy: 0.0002
         # Katt_Dwz: 0.0001
 
-        Katt_Ix: 0.005
-        Katt_Iy: 0.005
-        Katt_Iz: 0.005
+        Katt_Ix: 0.002
+        Katt_Iy: 0.002
+        Katt_Iz: 0 #0.004
         Katt_I_limit: 2
 
         Jtune_x: 16e-6
@@ -414,9 +424,13 @@ crazyflieTypes:
 
         Kpos_Ix: 3
         Kpos_Iy: 3
-        Kpos_Iz: 3
-        Kpos_I_limit: 2
-        Kpos_I_decay: 0.997 # 0.75 ** 0.01
+        Kpos_Iz: 10
+        Kpos_I_limit: 0.1
+        Kpos_I_decay: 1.0 #0.997 # 0.75 ** 0.01
+      ctrlSJC2:
+        T_d_lambda: 10
+        T_d_dot_limit: 1
+        Katt_Dw_limit: 10000
   medium:
     bigQuad: True
     batteryVoltageWarning: 7.6  # V

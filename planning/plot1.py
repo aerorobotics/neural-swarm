@@ -42,12 +42,12 @@ def vis_pdf(robots, dt, name='output.pdf'):
       qY = []
       qU = []
       qV = []
-      for k in np.arange(0,X.shape[0], 2):#int(5.0 / dt)):
+      for k in np.arange(0,X.shape[0], int(0.5 / dt)):
         qX.append(X[k,0])
         qY.append(X[k,1])
         qU.append(X[k,2])
         qV.append(X[k,3])
-      ax[0,c].quiver(qX,qY,qU,qV,angles='xy', scale_units='xy',scale=25, color=color, width=0.01)
+      ax[0,c].quiver(qX,qY,qU,qV,angles='xy', scale_units='xy',scale=5, color=color, width=0.01)
 
       # plot outline
       # ax.add_artist(mpatches.Circle(get_state(X,0)[0:2], robot.radius, color=color, alpha=0.2))
@@ -58,16 +58,20 @@ def vis_pdf(robots, dt, name='output.pdf'):
       # xlim = ax[0,c].get_xlim()
       # ylim = ax[0,c].get_ylim()
       ax[0,c].set_xlim([-0.7,0.7])
-      ax[0,c].set_ylim([-0.55,0.25])
+      ax[0,c].set_ylim([-0.4,0.4])
       ax[0,c].set_xticklabels([])
       ax[0,c].set_yticklabels([])
+      ax[0,c].set_xlabel('Y')
+      ax[0,0].set_ylabel('Z')
 
       # plot acceleration
       ax[1,c].plot([i * dt for i in range(U.size(0))], torch.norm(U, dim=1), color)
+      ax[1,c].set_xlabel('time [s]')
+      ax[1,0].set_ylabel('|u| [m/s^2]')
 
     # ax.set_xlabel("Y [m]")
     # ax.set_ylabel("Z [m]")
-  fig.subplots_adjust(wspace=0.1, hspace=0.0)
+  fig.subplots_adjust(wspace=0.1, hspace=0.1)
   ax[0,0].set_title('Stage 1')
   ax[0,1].set_title('Stage 2')
   ax[0,2].set_title('Stage 3')
@@ -76,6 +80,7 @@ def vis_pdf(robots, dt, name='output.pdf'):
 
 
   pp.close()
+  subprocess.call(["pdfcrop", name, name])
   subprocess.call(["xdg-open", name])
 
 

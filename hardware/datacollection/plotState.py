@@ -59,6 +59,8 @@ def rotation_matrix(quat):
    
     return rot_mat
 
+def force2pwm(pwm, vbat):
+  return C_00 + C_10*pwm + C_01*vbat + C_20*pwm**2 + C_11*vbat*pwm
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=str, help="logfile")
@@ -81,12 +83,13 @@ state_rpy = np.array([quat2rpy(q) for q in quatState])
 
 # compute roll/pitch/yaw components of thrust mixing
 
-thrust_to_torque = 0.006
-arm_length = 0.046 # m
-yawpart = -0.25 * logData['motor.torquez'] / thrust_to_torque
-arm = 0.707106781 * arm_length
-rollpart = 0.25 / arm * logData['motor.torquex'];
-pitchpart = 0.25 / arm * logData['motor.torquey'];
+if 'motor.torquez' in logData:
+  thrust_to_torque = 0.006
+  arm_length = 0.046 # m
+  yawpart = -0.25 * logData['motor.torquez'] / thrust_to_torque
+  arm = 0.707106781 * arm_length
+  rollpart = 0.25 / arm * logData['motor.torquex'];
+  pitchpart = 0.25 / arm * logData['motor.torquey'];
 
 
 # set window background to white
@@ -139,9 +142,26 @@ plt.legend(loc=9, ncol=3, borderaxespad=0.)
 plotCurrent = 11
 plt.subplot(plotRows, plotCols, plotCurrent)
 # estimate Fa based on collected data:
-mass = 0.033
+mass = 0.032
+C_00 = 11.093358483549203
+C_10 = -39.08104165843915
+C_01 = -9.525647087583181
+C_20 = 20.573302305476638
+C_11 = 38.42885066644033
 if "cf100" in args.file or "cf101" in args.file or "cf102" in args.file:
   mass = 0.067
+  C_00 = 44.10386631845999
+  C_10 = -122.51151800146272
+  C_01 = -36.18484254283743
+  C_20 = 53.10772568607133
+  C_11 = 107.6819263349139
+if "cf200" in args.file:
+  mass = 0.032
+  C_00 = 14.639083451431064
+  C_10 = -49.58925346670507
+  C_01 = -15.11436310327852
+  C_20 = 25.806716788604707
+  C_11 = 54.00127729445893
 
 acc = np.column_stack((
   logData['stateEstimateZ.ax'] / 1000.0,
@@ -156,7 +176,13 @@ vel = np.column_stack((
 print(vel.shape, time.shape)
 acc2 = np.diff(vel, axis=0) / np.column_stack((np.diff(time), np.diff(time), np.diff(time)))
 
-thrust = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+# thrust_fw = logData['motor.f1'] + logData['motor.f2'] + logData['motor.f3'] + logData['motor.f4']
+# Estimate thrust using PWM model (to account for motor saturation; output in grams)
+force_pwm_1 = force2pwm(logData['pwm.m1_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+force_pwm_2 = force2pwm(logData['pwm.m2_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+force_pwm_3 = force2pwm(logData['pwm.m3_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+force_pwm_4 = force2pwm(logData['pwm.m4_pwm'] / 65536, logData['pm.vbatMV'] / 1000 / 4.2)
+thrust = (force_pwm_1 + force_pwm_2 + force_pwm_3 + force_pwm_4) / 1000 * 9.81
 
 # consider delay
 thrust_delay = np.zeros(len(thrust))
@@ -188,6 +214,7 @@ plt.ylabel('Fa')
 plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 
+# plotCurrent = 12
 # plt.subplot(plotRows, plotCols, plotCurrent)
 # plt.plot(time, logData['motor.torquex'], '-', label='x')
 # plt.plot(time, logData['motor.torquey'], '-', label='y')
@@ -198,13 +225,20 @@ plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 plotCurrent = 12
 plt.subplot(plotRows, plotCols, plotCurrent)
-# plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
-# plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
-# plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
-plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
-
+plt.plot(time, logData['motor.thrust'], '-')
 plt.xlabel('Time [s]')
-plt.ylabel('Thrust mixing [g]'.format(axis))
-plt.legend(loc=9, ncol=3, borderaxespad=0.)
+plt.ylabel('Thrust [N]')
+
+# if 'motor.torquez' in logData:
+#   plotCurrent = 12
+#   plt.subplot(plotRows, plotCols, plotCurrent)
+#   # plt.plot(time, rollpart / 9.81 * 1000, '-', label='x')
+#   # plt.plot(time, pitchpart / 9.81 * 1000, '-', label='y')
+#   # plt.plot(time, yawpart / 9.81 * 1000, '-', label='z')
+#   plt.stackplot(time, np.abs(rollpart / 9.81 * 1000), np.abs(pitchpart / 9.81 * 1000), np.abs(yawpart / 9.81 * 1000), labels=["roll","pitch", "yaw"])
+
+#   plt.xlabel('Time [s]')
+#   plt.ylabel('Thrust mixing [g]'.format(axis))
+#   plt.legend(loc=9, ncol=3, borderaxespad=0.)
 
 plt.show()

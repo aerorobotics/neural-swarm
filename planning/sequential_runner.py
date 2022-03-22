@@ -12,9 +12,9 @@ if __name__ == '__main__':
   plt.rcParams.update({'font.size': 12})
   plt.rcParams['lines.linewidth'] = 4
 
-  max_workers = 10
+  max_workers = 24
 
-  repeats = 1
+  repeats = 5
 
   cases = [
     # {
@@ -24,13 +24,13 @@ if __name__ == '__main__':
     #   'robots': [
     #     {
     #       'type': 'small',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
     #     },
     #     {
     #       'type': 'large',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
     #     },
     #   ]
     # },
@@ -41,13 +41,13 @@ if __name__ == '__main__':
     #   'robots': [
     #     {
     #       'type': 'small',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
     #     },
     #     {
     #       'type': 'small',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
     #     },
     #   ]
     # },
@@ -58,33 +58,123 @@ if __name__ == '__main__':
     #   'robots': [
     #     {
     #       'type': 'large',
-    #       'x0': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
     #     },
     #     {
     #       'type': 'large',
-    #       'x0': torch.tensor([0.5,0,0,0], dtype=torch.float32),
-    #       'xf': torch.tensor([-0.5,0,0,0], dtype=torch.float32),
+    #       'x0': torch.tensor([0.25,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.25,1,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
+    # {
+    #   'name': "small/small/large Swap",
+    #   'shortname': "SSL",
+    #   'use3D': False,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0.6,1,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
     #     },
     #   ]
     # },
     {
-      'name': "Small/Large Swap (3D)",
-      'shortname': "SL3D",
-      'use3D': True,
+      'name': "small/small/small Swap",
+      'shortname': "SSS",
+      'use3D': False,
       'robots': [
         {
           'type': 'small',
-          'x0': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+          'x0': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
         },
         {
-          'type': 'large',
-          'x0': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
-          'xf': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+          'type': 'small',
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.6,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'small',
+          'x0': torch.tensor([0.3,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.3,1,0,0,0], dtype=torch.float32),
         },
       ]
     },
+    {
+      'name': "small/large/large Swap",
+      'shortname': "SLL",
+      'use3D': False,
+      'robots': [
+        {
+          'type': 'large',
+          'x0': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'small',
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.8,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+        },
+      ]
+    },
+    {
+      'name': "large/large/large Swap",
+      'shortname': "LLL",
+      'use3D': False,
+      'robots': [
+        {
+          'type': 'large',
+          'x0': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.0,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([0.8,1,0,0,0], dtype=torch.float32),
+        },
+        {
+          'type': 'large',
+          'x0': torch.tensor([0.4,1,0,0,0], dtype=torch.float32),
+          'xf': torch.tensor([-0.4,1,0,0,0], dtype=torch.float32),
+        },
+      ]
+    },
+
+
+    # {
+    #   'name': "Small/Large Swap (3D)",
+    #   'shortname': "SL3D",
+    #   'use3D': True,
+    #   'robots': [
+    #     {
+    #       'type': 'small',
+    #       'x0': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+    #     },
+    #     {
+    #       'type': 'large',
+    #       'x0': torch.tensor([0,0.5,0,0,0,0], dtype=torch.float32),
+    #       'xf': torch.tensor([0,-0.5,0,0,0,0], dtype=torch.float32),
+    #     },
+    #   ]
+    # },
   ]
 
   if True:
@@ -97,12 +187,17 @@ if __name__ == '__main__':
           useNNs.append(useNN)
           robot_infos.append(case)
           if useNN:
-            file_names.append("../data/planning/case_{}_iter_{}_NN.pdf".format(case['shortname'], j))
+            file_names.append("../data/planning/case_{}_iter_{}_NN".format(case['shortname'], j))
           else:
-            file_names.append("../data/planning/case_{}_iter_{}.pdf".format(case['shortname'], j))
+            file_names.append("../data/planning/case_{}_iter_{}".format(case['shortname'], j))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers) as executor:
-      results = executor.map(sequential_planning, useNNs, [ri['robots'] for ri in robot_infos], file_names, [ri['use3D'] for ri in robot_infos])
+      results = executor.map(sequential_planning, 
+        useNNs,
+        [ri['robots'] for ri in robot_infos],
+        file_names,
+        [ri['use3D'] for ri in robot_infos])#,
+        # repeat(200))
       results = list(results)
 
     pickle.dump( results, open( "runner.p", "wb" ) )
@@ -113,14 +208,17 @@ if __name__ == '__main__':
   tracking_errors = np.zeros(len(results))
   max_z_errors = np.zeros(len(results))
   control_efforts = np.zeros(len(results))
+  fa_within_bounds = np.zeros(len(results))
   for k, stats in enumerate(results):
     tracking_errors[k] = stats['tracking_errors'][0]
     max_z_errors[k] = stats['max_z_errors'][0]
-    control_efforts[k] = stats['control_efforts'][0]
+    # control_efforts[k] = stats['control_efforts'][0]
     # tracking_errors[k] = stats['tracking_errors_avg']
-    # control_efforts[k] = stats['control_efforts_avg']
+    control_efforts[k] = stats['control_efforts_avg']
+    fa_within_bounds[k] = stats['fa_within_bounds']
+    # print(stats['fa_abs_max'], stats['fa_within_bounds'])
 
-  fig, ax = plt.subplots(3, len(cases), sharey='row', squeeze=False)
+  fig, ax = plt.subplots(4, len(cases), sharey='row', squeeze=False)
   for c, case in enumerate(cases):
     idx = c * 2 * repeats
 
@@ -136,8 +234,13 @@ if __name__ == '__main__':
     ax[1,c].grid(True)
     ax[2,c].grid(True)
 
+
+    ax[3,c].bar(0, np.sum(fa_within_bounds[idx:idx+repeats]))#, labels=["NN", "no NN"])
+    ax[3,c].bar(1, np.sum(fa_within_bounds[idx+repeats:idx+2*repeats]))#, labels=["NN", "no NN"])
+
   ax[0,0].set_ylabel('Tracking error')
-  ax[1,0].set_ylabel('Max Z Error')
-  ax[2,0].set_ylabel('Control effort')
+  ax[1,0].set_ylabel('Max z error')
+  ax[2,0].set_ylabel('Avg. control effort')
+  ax[3,0].set_ylabel('# Success')
 
   plt.show()

@@ -19,3 +19,16 @@ $ roslaunch neural-swarm neural-swarm.launch
 neural-swarm-ros-pkg/scripts$ export PYTHONPATH=$PYTHONPATH:/path/to/crazyswarm/ros_ws/src/crazyswarm/scripts
 neural-swarm-ros-pkg/scripts$ examplescript.py
 ```
+
+### Build firmware 
+
+```
+neural-swarm/hardware/nn-export$ python3 gen.py ../../data/models/val_with22/epoch40_lip3_h20_f0d35_B256/
+neural-swarm/hardware/nn-export$ cp nn_generated_weights.c ../crazyflie-firmware/src/modules/src/
+```
+
+### Validation
+
+```
+python3 ../../../../hardware/datacollection/plotValidation.py .
+```
