@@ -16,14 +16,14 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument(
     '--path',
-    default= 'revision/epoch20_lip3_h20_f0d35_B256_neglect_velocity',
+    default= 'models/output',
     help = "path"
 )
 parser.add_argument(
     '--npy',
     action='store_true',
     default=False,
-    help='whether to directly use the npy data')
+    help='whether to directly use the npy data, which does not need data preprocessing steps')
 parser.add_argument(
     '--npy_address',
     default='../data/revision/',
@@ -843,7 +843,8 @@ if opt.npy:
     Data_output_all = np.load(opt.npy_address + 'Data_output_all.npy', allow_pickle=True)
 
 ##### Start (for T-RO revision) #####
-revision_block = 2
+# This section is only for some statistics and ablation analysis in the T-RO revision cover letter
+revision_block = 0
 # (1) Speed statistics
 if revision_block == 1:
     Speed_L = []
