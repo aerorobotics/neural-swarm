@@ -1,5 +1,5 @@
 # neural-swarm
-Code and data related to the Neural-Swarm and Neural-Swarm2 (ICRA 2020, T-RO 2021) papers
+Code and data related to the [Neural-Swarm](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9196800) and [Neural-Swarm2](https://ieeexplore.ieee.org/abstract/document/9508420) (ICRA 2020, T-RO 2021) papers
 
 For training, please run `learning/training.py`, which will use data in `data/training`.
 
